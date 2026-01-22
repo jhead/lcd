@@ -7,7 +7,12 @@ CREATE TABLE IF NOT EXISTS snapshots (
   total_easy INTEGER NOT NULL DEFAULT 0,
   total_medium INTEGER NOT NULL DEFAULT 0,
   total_hard INTEGER NOT NULL DEFAULT 0,
-  tags_json TEXT NOT NULL DEFAULT '{}'
+  tags_json TEXT NOT NULL DEFAULT '{}',
+  beats_json TEXT NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX IF NOT EXISTS idx_timestamp ON snapshots(timestamp);
+
+-- Migration: Add beats_json column to existing tables
+-- Run this manually if you have existing data:
+-- ALTER TABLE snapshots ADD COLUMN beats_json TEXT NOT NULL DEFAULT '{}';

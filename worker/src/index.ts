@@ -20,8 +20,8 @@ const querySession = `
 `;
 
 const querySkills = `
-  query skillStats($username: String!) {
-    skillStats(username: $username) {
+  query skillTags($username: String!) {
+    skillTags(username: $username) {
       advanced {
         tagName
         tagSlug
@@ -53,7 +53,8 @@ interface Env {
 async function fetchGQL(
   query: string,
   variables: Record<string, string>,
-  env: Env
+  env: Env,
+  queryName?: string
 ): Promise<any> {
   const LEETCODE_API = 'https://leetcode.com/graphql/';
   
@@ -66,18 +67,24 @@ async function fetchGQL(
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
   };
 
+  const requestBody = { query, variables };
+  console.log(`[${queryName || 'GQL'}] Making request with variables:`, JSON.stringify(variables));
+
   const response = await fetch(LEETCODE_API, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ query, variables })
+    body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {
-    throw new Error(`LeetCode API error: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    console.error(`[${queryName || 'GQL'}] Error response (${response.status}):`, errorText);
+    throw new Error(`LeetCode API error: ${response.status} ${response.statusText} - ${errorText.substring(0, 500)}`);
   }
 
   const data = await response.json();
   if (data.errors) {
+    console.error(`[${queryName || 'GQL'}] GraphQL errors:`, JSON.stringify(data.errors));
     throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
   }
 
@@ -112,48 +119,60 @@ async function triggerGitHubBuild(ghToken?: string, repo?: string): Promise<void
   }
 }
 
+async function collectData(env: Env): Promise<void> {
+  try {
+    // 1. Fetch Data (Run the 3 queries)
+    console.log('Starting data fetch...');
+    console.log('User slug:', env.LEETCODE_USER_SLUG);
+    console.log('Username:', env.LEETCODE_USERNAME);
+    
+    const [progress, session, skills] = await Promise.all([
+      fetchGQL(queryProgress, { userSlug: env.LEETCODE_USER_SLUG }, env, 'progress'),
+      fetchGQL(querySession, { username: env.LEETCODE_USERNAME }, env, 'session'),
+      fetchGQL(querySkills, { username: env.LEETCODE_USERNAME }, env, 'skills')
+    ]);
+
+    // 2. Parse & Prepare
+    const numAccepted = progress.data.userProfileUserQuestionProgressV2.numAcceptedQuestions;
+    const easyCount = numAccepted.find((q: any) => q.difficulty === 'EASY')?.count || 0;
+    const mediumCount = numAccepted.find((q: any) => q.difficulty === 'MEDIUM')?.count || 0;
+    const hardCount = numAccepted.find((q: any) => q.difficulty === 'HARD')?.count || 0;
+
+    // Parse beats percentages
+    const beatsData = session.data.userSessionBeatsPercentage || [];
+    const beats: Record<string, number> = {};
+    for (const item of beatsData) {
+      beats[item.difficulty.toLowerCase()] = item.percentage;
+    }
+
+    // 3. Save to D1
+    await env.DB.prepare(
+      `INSERT INTO snapshots (timestamp, total_easy, total_medium, total_hard, tags_json, beats_json) VALUES (?, ?, ?, ?, ?, ?)`
+    )
+      .bind(
+        Date.now(),
+        easyCount,
+        mediumCount,
+        hardCount,
+              JSON.stringify(skills.data.skillTags || {}),
+        JSON.stringify(beats)
+      )
+      .run();
+
+    console.log(`Snapshot saved: Easy=${easyCount}, Medium=${mediumCount}, Hard=${hardCount}, Beats=${JSON.stringify(beats)}`);
+
+    // 4. Trigger Rebuild (Optional)
+    // Uncomment and configure if you want to trigger GitHub Actions rebuild
+    // await triggerGitHubBuild(env.GH_TOKEN, env.GH_REPO);
+  } catch (error) {
+    console.error('Error in data collection:', error);
+    throw error;
+  }
+}
+
 export default {
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(
-      (async () => {
-        try {
-          // 1. Fetch Data (Run the 3 queries)
-          const [progress, session, skills] = await Promise.all([
-            fetchGQL(queryProgress, { userSlug: env.LEETCODE_USER_SLUG }, env),
-            fetchGQL(querySession, { username: env.LEETCODE_USERNAME }, env),
-            fetchGQL(querySkills, { username: env.LEETCODE_USERNAME }, env)
-          ]);
-
-          // 2. Parse & Prepare
-          const numAccepted = progress.data.userProfileUserQuestionProgressV2.numAcceptedQuestions;
-          const easyCount = numAccepted.find((q: any) => q.difficulty === 'EASY')?.count || 0;
-          const mediumCount = numAccepted.find((q: any) => q.difficulty === 'MEDIUM')?.count || 0;
-          const hardCount = numAccepted.find((q: any) => q.difficulty === 'HARD')?.count || 0;
-
-          // 3. Save to D1
-          await env.DB.prepare(
-            `INSERT INTO snapshots (timestamp, total_easy, total_medium, total_hard, tags_json) VALUES (?, ?, ?, ?, ?)`
-          )
-            .bind(
-              Date.now(),
-              easyCount,
-              mediumCount,
-              hardCount,
-              JSON.stringify(skills.data.skillStats || {})
-            )
-            .run();
-
-          console.log(`Snapshot saved: Easy=${easyCount}, Medium=${mediumCount}, Hard=${hardCount}`);
-
-          // 4. Trigger Rebuild (Optional)
-          // Uncomment and configure if you want to trigger GitHub Actions rebuild
-          // await triggerGitHubBuild(env.GH_TOKEN, env.GH_REPO);
-        } catch (error) {
-          console.error('Error in scheduled task:', error);
-          throw error;
-        }
-      })()
-    );
+    ctx.waitUntil(collectData(env));
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -171,6 +190,25 @@ export default {
         });
       } catch (error) {
         return new Response(JSON.stringify({ error: 'Database error' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // Manual trigger endpoint for testing
+    if (url.pathname === '/api/trigger') {
+      try {
+        await collectData(env);
+        return new Response(JSON.stringify({ status: 'success', message: 'Data collection completed' }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error: any) {
+        return new Response(JSON.stringify({ 
+          status: 'error', 
+          error: error.message,
+          stack: error.stack 
+        }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
         });
