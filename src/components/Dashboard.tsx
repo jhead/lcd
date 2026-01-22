@@ -127,6 +127,19 @@ export default function Dashboard() {
 
   const maxSkillValue = skillData.length > 0 ? Math.max(...skillData.map(s => s.value)) : 1;
 
+  // Format timestamp for display
+  const formatTimestamp = (ts: number) => {
+    return new Date(ts).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  const lcLastUpdated = history.length > 0 ? formatTimestamp(history[history.length - 1].timestamp) : null;
+  const lsrLastUpdated = lsrHistory.length > 0 ? formatTimestamp(lsrHistory[lsrHistory.length - 1].timestamp) : null;
+
   return (
     <div className="space-y-5">
       {/* Row 1: Total Stats (Pie) + Combined Stats Card */}
@@ -228,6 +241,13 @@ export default function Dashboard() {
             <p className="text-neutral-600 text-sm">No skill data available</p>
           )}
         </div>
+      </div>
+
+      {/* Footer: Last Updated */}
+      <div className="text-xs text-neutral-600 text-center pt-2">
+        {lcLastUpdated && <span>LC: {lcLastUpdated}</span>}
+        {lcLastUpdated && lsrLastUpdated && <span className="mx-2">·</span>}
+        {lsrLastUpdated && <span>LSR: {lsrLastUpdated}</span>}
       </div>
     </div>
   );
