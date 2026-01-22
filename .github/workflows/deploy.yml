@@ -29,9 +29,9 @@ jobs:
       
       - name: Build
         run: pnpm build
-        env:
-          # If you need to fetch data from the Worker API during build:
-          # WORKER_API_URL: ${{ secrets.WORKER_API_URL }}
+        # If you need to fetch data from the Worker API during build, add:
+        # env:
+        #   PUBLIC_WORKER_API_URL: ${{ secrets.WORKER_API_URL }}
       
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
