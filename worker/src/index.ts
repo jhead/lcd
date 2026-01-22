@@ -45,6 +45,7 @@ interface Env {
   GH_TOKEN?: string;
   LEETCODE_USERNAME: string;
   LEETCODE_USER_SLUG: string;
+  LSR_API_KEY?: string;
 }
 
 async function fetchGQL(
@@ -119,6 +120,7 @@ async function triggerGitHubBuild(ghToken?: string, repo?: string): Promise<void
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
   'http://localhost:4321',
+  'http://localhost:5173',
   'https://jhead.github.io'
 ];
 
@@ -130,8 +132,8 @@ function getCorsHeaders(origin: string | null): HeadersInit {
   // Check if the origin is allowed
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
-    headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
-    headers['Access-Control-Allow-Headers'] = 'Content-Type';
+    headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+    headers['Access-Control-Allow-Headers'] = 'Content-Type, X-API-Key';
     headers['Access-Control-Max-Age'] = '86400'; // 24 hours
   }
 
@@ -254,6 +256,76 @@ export default {
       return new Response(JSON.stringify({ status: 'ok' }), {
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+
+    // LSR snapshot endpoint - POST to store mastery snapshot
+    if (url.pathname === '/api/lsr/snapshot' && request.method === 'POST') {
+      // Validate API key
+      const apiKey = request.headers.get('X-API-Key');
+      if (!env.LSR_API_KEY || apiKey !== env.LSR_API_KEY) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: getCorsHeaders(origin)
+        });
+      }
+
+      try {
+        const body = await request.json() as {
+          timestamp: number;
+          counts: {
+            strong: number;
+            learning: number;
+            weak: number;
+            leech: number;
+            unknown: number;
+            total: number;
+          };
+        };
+
+        await env.DB.prepare(
+          `INSERT INTO lsr_snapshots (timestamp, strong, learning, weak, leech, unknown, total) VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+          .bind(
+            body.timestamp,
+            body.counts.strong,
+            body.counts.learning,
+            body.counts.weak,
+            body.counts.leech,
+            body.counts.unknown,
+            body.counts.total
+          )
+          .run();
+
+        console.log(`LSR snapshot saved: Strong=${body.counts.strong}, Learning=${body.counts.learning}, Weak=${body.counts.weak}, Leech=${body.counts.leech}, Unknown=${body.counts.unknown}, Total=${body.counts.total}`);
+
+        return new Response(JSON.stringify({ status: 'success' }), {
+          headers: getCorsHeaders(origin)
+        });
+      } catch (error: any) {
+        console.error('Error saving LSR snapshot:', error);
+        return new Response(JSON.stringify({ error: 'Failed to save snapshot', details: error.message }), {
+          status: 500,
+          headers: getCorsHeaders(origin)
+        });
+      }
+    }
+
+    // LSR history endpoint - GET all mastery snapshots
+    if (url.pathname === '/api/lsr/history') {
+      try {
+        const result = await env.DB.prepare(
+          `SELECT * FROM lsr_snapshots ORDER BY timestamp ASC`
+        ).all();
+
+        return new Response(JSON.stringify(result.results || []), {
+          headers: getCorsHeaders(origin)
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ error: 'Database error' }), {
+          status: 500,
+          headers: getCorsHeaders(origin)
+        });
+      }
     }
 
     return new Response('Not Found', { status: 404 });

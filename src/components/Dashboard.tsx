@@ -12,6 +12,8 @@ import TotalsPieChart from "./TotalsPieChart";
 import CombinedStatsCard from "./CombinedStatsCard";
 import SkillRadar from "./SkillRadar";
 import ProgressHeatmap from "./ProgressHeatmap";
+import MasteryChart, { type LSRSnapshot } from "./MasteryChart";
+import MasteryStatsCard from "./MasteryStatsCard";
 
 interface HistoryEntry {
   timestamp: number;
@@ -34,6 +36,7 @@ export default function Dashboard() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lsrHistory, setLsrHistory] = useState<LSRSnapshot[]>([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -53,6 +56,23 @@ export default function Dashboard() {
       }
     }
     fetchData();
+  }, []);
+
+  // Fetch LSR mastery data (non-blocking, fail silently)
+  useEffect(() => {
+    async function fetchLsrData() {
+      try {
+        const response = await fetch(`${API_URL}/api/lsr/history`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setLsrHistory(data);
+        }
+      } catch {
+        // Fail silently - LSR data is optional
+      }
+    }
+    fetchLsrData();
   }, []);
 
   if (loading) {
@@ -201,6 +221,21 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Row 5: LSR Mastery (only shown when data available) */}
+      {lsrHistory.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 rounded-lg bg-neutral-900 border border-neutral-800 p-5">
+            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Mastery Over Time</h3>
+            <MasteryChart history={lsrHistory} />
+          </div>
+
+          <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
+            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Current Mastery</h3>
+            <MasteryStatsCard snapshot={lsrHistory[lsrHistory.length - 1]} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
