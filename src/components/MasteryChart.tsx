@@ -29,7 +29,6 @@ const COLORS = {
   learning: '#3b82f6',  // blue-500
   weak: '#eab308',      // yellow-500
   leech: '#ef4444',     // red-500
-  unknown: '#525252',   // neutral-600
 };
 
 export default function MasteryChart({ history }: MasteryChartProps) {
@@ -46,7 +45,6 @@ export default function MasteryChart({ history }: MasteryChartProps) {
     Learning: entry.learning,
     Weak: entry.weak,
     Leech: entry.leech,
-    Unknown: entry.unknown,
   }));
 
   return (
@@ -79,7 +77,6 @@ export default function MasteryChart({ history }: MasteryChartProps) {
           <Bar dataKey="Learning" stackId="mastery" fill={COLORS.learning} />
           <Bar dataKey="Weak" stackId="mastery" fill={COLORS.weak} />
           <Bar dataKey="Leech" stackId="mastery" fill={COLORS.leech} />
-          <Bar dataKey="Unknown" stackId="mastery" fill={COLORS.unknown} />
         </BarChart>
       </ResponsiveContainer>
     </div>

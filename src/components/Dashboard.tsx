@@ -185,13 +185,28 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Row 3: Heatmap */}
+      {/* Row 3: LSR Mastery (only shown when data available) */}
+      {lsrHistory.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 rounded-lg bg-neutral-900 border border-neutral-800 p-5">
+            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Mastery Over Time</h3>
+            <MasteryChart history={lsrHistory} />
+          </div>
+
+          <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
+            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Current Mastery</h3>
+            <MasteryStatsCard snapshot={lsrHistory[lsrHistory.length - 1]} />
+          </div>
+        </div>
+      )}
+
+      {/* Row 4: Heatmap */}
       <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
         <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Activity</h3>
         <ProgressHeatmap history={history} />
       </div>
 
-      {/* Row 4: Skills */}
+      {/* Row 5: Skills */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 rounded-lg bg-neutral-900 border border-neutral-800 p-5">
           <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Skills</h3>
@@ -221,21 +236,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-
-      {/* Row 5: LSR Mastery (only shown when data available) */}
-      {lsrHistory.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 rounded-lg bg-neutral-900 border border-neutral-800 p-5">
-            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Mastery Over Time</h3>
-            <MasteryChart history={lsrHistory} />
-          </div>
-
-          <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
-            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Current Mastery</h3>
-            <MasteryStatsCard snapshot={lsrHistory[lsrHistory.length - 1]} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
