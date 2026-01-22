@@ -6,36 +6,33 @@ const queryProgress = `
         difficulty
         count
       }
-    }
-  }
-`;
-
-const querySession = `
-  query userSessionBeatsPercentage($username: String!) {
-    userSessionBeatsPercentage(username: $username) {
-      difficulty
-      percentage
+      userSessionBeatsPercentage {
+        difficulty
+        percentage
+      }
     }
   }
 `;
 
 const querySkills = `
-  query skillTags($username: String!) {
-    skillTags(username: $username) {
-      advanced {
-        tagName
-        tagSlug
-        problemsSolved
-      }
-      intermediate {
-        tagName
-        tagSlug
-        problemsSolved
-      }
-      fundamental {
-        tagName
-        tagSlug
-        problemsSolved
+  query skillStats($username: String!) {
+    matchedUser(username: $username) {
+      tagProblemCounts {
+        advanced {
+          tagName
+          tagSlug
+          problemsSolved
+        }
+        intermediate {
+          tagName
+          tagSlug
+          problemsSolved
+        }
+        fundamental {
+          tagName
+          tagSlug
+          problemsSolved
+        }
       }
     }
   }
@@ -82,7 +79,7 @@ async function fetchGQL(
     throw new Error(`LeetCode API error: ${response.status} ${response.statusText} - ${errorText.substring(0, 500)}`);
   }
 
-  const data = await response.json();
+  const data = await response.json() as { data?: any; errors?: any[] };
   if (data.errors) {
     console.error(`[${queryName || 'GQL'}] GraphQL errors:`, JSON.stringify(data.errors));
     throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
@@ -119,27 +116,55 @@ async function triggerGitHubBuild(ghToken?: string, repo?: string): Promise<void
   }
 }
 
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'http://localhost:4321',
+  'https://jhead.github.io'
+];
+
+function getCorsHeaders(origin: string | null): HeadersInit {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  // Check if the origin is allowed
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
+    headers['Access-Control-Allow-Headers'] = 'Content-Type';
+    headers['Access-Control-Max-Age'] = '86400'; // 24 hours
+  }
+
+  return headers;
+}
+
 async function collectData(env: Env): Promise<void> {
   try {
-    // 1. Fetch Data (Run the 3 queries)
+    // 1. Fetch Data (Run the 2 queries)
     console.log('Starting data fetch...');
     console.log('User slug:', env.LEETCODE_USER_SLUG);
     console.log('Username:', env.LEETCODE_USERNAME);
     
-    const [progress, session, skills] = await Promise.all([
-      fetchGQL(queryProgress, { userSlug: env.LEETCODE_USER_SLUG }, env, 'progress'),
-      fetchGQL(querySession, { username: env.LEETCODE_USERNAME }, env, 'session'),
-      fetchGQL(querySkills, { username: env.LEETCODE_USERNAME }, env, 'skills')
-    ]);
+    // Fetch progress (includes beats percentage)
+    const progress = await fetchGQL(queryProgress, { userSlug: env.LEETCODE_USER_SLUG }, env, 'progress');
+    
+    // Fetch skills (optional - may fail if query structure is wrong)
+    let skills: any = { data: { matchedUser: { tagProblemCounts: {} } } };
+    try {
+      skills = await fetchGQL(querySkills, { username: env.LEETCODE_USERNAME }, env, 'skills');
+    } catch (error: any) {
+      console.warn('Skills query failed, continuing without skills data:', error.message);
+    }
 
     // 2. Parse & Prepare
-    const numAccepted = progress.data.userProfileUserQuestionProgressV2.numAcceptedQuestions;
+    const progressData = progress.data.userProfileUserQuestionProgressV2;
+    const numAccepted = progressData.numAcceptedQuestions;
     const easyCount = numAccepted.find((q: any) => q.difficulty === 'EASY')?.count || 0;
     const mediumCount = numAccepted.find((q: any) => q.difficulty === 'MEDIUM')?.count || 0;
     const hardCount = numAccepted.find((q: any) => q.difficulty === 'HARD')?.count || 0;
 
-    // Parse beats percentages
-    const beatsData = session.data.userSessionBeatsPercentage || [];
+    // Parse beats percentages from progress query
+    const beatsData = progressData.userSessionBeatsPercentage || [];
     const beats: Record<string, number> = {};
     for (const item of beatsData) {
       beats[item.difficulty.toLowerCase()] = item.percentage;
@@ -154,7 +179,7 @@ async function collectData(env: Env): Promise<void> {
         easyCount,
         mediumCount,
         hardCount,
-              JSON.stringify(skills.data.skillTags || {}),
+              JSON.stringify(skills.data.matchedUser?.tagProblemCounts || {}),
         JSON.stringify(beats)
       )
       .run();
@@ -177,6 +202,15 @@ export default {
 
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    const origin = request.headers.get('Origin');
+
+    // Handle CORS preflight requests
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: getCorsHeaders(origin)
+      });
+    }
 
     // API endpoint to fetch history
     if (url.pathname === '/api/history') {
@@ -186,12 +220,12 @@ export default {
         ).all();
 
         return new Response(JSON.stringify(result.results || []), {
-          headers: { 'Content-Type': 'application/json' }
+          headers: getCorsHeaders(origin)
         });
       } catch (error) {
         return new Response(JSON.stringify({ error: 'Database error' }), {
           status: 500,
-          headers: { 'Content-Type': 'application/json' }
+          headers: getCorsHeaders(origin)
         });
       }
     }
