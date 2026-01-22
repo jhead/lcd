@@ -185,10 +185,9 @@ export default function Dashboard() {
         <div className="flex items-center gap-6">
           <div>
             <h1 className="text-sm font-medium text-neutral-400 uppercase tracking-wide">leetcode</h1>
-            <div className="text-xs text-neutral-500 mt-1">
-              {lcLastUpdated && <span>lc: {lcLastUpdated}</span>}
-              {lcLastUpdated && lsrLastUpdated && <span className="mx-2">·</span>}
-              {lsrLastUpdated && <span>lsr: {lsrLastUpdated}</span>}
+            <div className="text-xs text-neutral-500 mt-1 space-y-0.5">
+              {lcLastUpdated && <div>lc: {lcLastUpdated}</div>}
+              {lsrLastUpdated && <div>lsr: {lsrLastUpdated}</div>}
             </div>
           </div>
         </div>
