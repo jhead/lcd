@@ -48,35 +48,35 @@ export default function MasteryChart({ history }: MasteryChartProps) {
   }));
 
   return (
-    <div className="h-64">
+    <div className="h-48">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
           <XAxis
             dataKey="date"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#525252', fontSize: 11 }}
+            tick={{ fill: '#737373', fontSize: 10 }}
             interval="preserveStartEnd"
           />
           <YAxis
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#525252', fontSize: 11 }}
-            width={40}
+            tick={{ fill: '#737373', fontSize: 10 }}
+            width={30}
           />
           <Tooltip
-            contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: '6px' }}
-            labelStyle={{ color: '#d4d4d4' }}
-            itemStyle={{ color: '#a3a3a3' }}
+            contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: 0 }}
+            labelStyle={{ color: '#e5e5e5', fontSize: 11 }}
+            itemStyle={{ color: '#a3a3a3', fontSize: 11 }}
           />
           <Legend
-            wrapperStyle={{ paddingTop: '10px' }}
-            formatter={(value) => <span style={{ color: '#737373' }}>{value}</span>}
+            wrapperStyle={{ paddingTop: '5px' }}
+            formatter={(value) => <span style={{ color: '#737373', fontSize: 10 }}>{value}</span>}
           />
-          <Bar dataKey="Strong" stackId="mastery" fill={COLORS.strong} />
-          <Bar dataKey="Learning" stackId="mastery" fill={COLORS.learning} />
-          <Bar dataKey="Weak" stackId="mastery" fill={COLORS.weak} />
-          <Bar dataKey="Leech" stackId="mastery" fill={COLORS.leech} />
+          <Bar dataKey="Strong" stackId="mastery" fill={COLORS.strong} isAnimationActive={false} />
+          <Bar dataKey="Learning" stackId="mastery" fill={COLORS.learning} isAnimationActive={false} />
+          <Bar dataKey="Weak" stackId="mastery" fill={COLORS.weak} isAnimationActive={false} />
+          <Bar dataKey="Leech" stackId="mastery" fill={COLORS.leech} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </div>

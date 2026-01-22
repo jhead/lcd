@@ -10,7 +10,6 @@ import {
 } from 'recharts';
 import TotalsPieChart from "./TotalsPieChart";
 import CombinedStatsCard from "./CombinedStatsCard";
-import SkillRadar from "./SkillRadar";
 import MasteryChart, { type LSRSnapshot } from "./MasteryChart";
 import MasteryStatsCard from "./MasteryStatsCard";
 
@@ -77,7 +76,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-neutral-500">Loading...</div>
+        <div className="text-neutral-500 text-sm">loading...</div>
       </div>
     );
   }
@@ -85,7 +84,7 @@ export default function Dashboard() {
   if (error || history.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-neutral-500">{error || 'No data available'}</div>
+        <div className="text-neutral-500 text-sm">{error || 'no data'}</div>
       </div>
     );
   }
@@ -102,10 +101,9 @@ export default function Dashboard() {
     Hard: entry.total_hard,
   }));
 
-  let skills: { advanced?: any[]; intermediate?: any[]; fundamental?: any[] } = {};
   let skillData: Array<{ name: string; value: number }> = [];
   try {
-    skills = JSON.parse(current.tags_json || '{}');
+    const skills = JSON.parse(current.tags_json || '{}');
     const allSkills = [
       ...(skills.advanced || []),
       ...(skills.intermediate || []),
@@ -117,7 +115,7 @@ export default function Dashboard() {
         value: skill.problemsSolved || 0,
       }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
+      .slice(0, 8);
   } catch (e) {}
 
   let beats: Beats = {};
@@ -140,19 +138,69 @@ export default function Dashboard() {
   const lcLastUpdated = history.length > 0 ? formatTimestamp(history[history.length - 1].timestamp) : null;
   const lsrLastUpdated = lsrHistory.length > 0 ? formatTimestamp(lsrHistory[lsrHistory.length - 1].timestamp) : null;
 
-  return (
-    <div className="space-y-5">
-      {/* Row 1: Pie + Stats + Mastery Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
-          <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Total Progress</h3>
-          <TotalsPieChart
-            easy={current.total_easy}
-            medium={current.total_medium}
-            hard={current.total_hard}
-          />
-        </div>
+  // Backfill LSR history to align with LC history dates
+  const backfilledLsrHistory: LSRSnapshot[] = (() => {
+    if (lsrHistory.length === 0) return [];
 
+    // Create a map of date string -> LSR snapshot
+    const lsrByDate = new Map<string, LSRSnapshot>();
+    for (const entry of lsrHistory) {
+      const dateStr = new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      lsrByDate.set(dateStr, entry);
+    }
+
+    // Build aligned history based on LC dates
+    const result: LSRSnapshot[] = [];
+    let lastKnown: LSRSnapshot | null = null;
+
+    for (const lcEntry of history) {
+      const dateStr = new Date(lcEntry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const lsrEntry = lsrByDate.get(dateStr);
+
+      if (lsrEntry) {
+        lastKnown = lsrEntry;
+        result.push(lsrEntry);
+      } else {
+        // Backfill with zeros before first LSR data, or carry forward last known
+        result.push({
+          id: 0,
+          timestamp: lcEntry.timestamp,
+          strong: lastKnown?.strong ?? 0,
+          learning: lastKnown?.learning ?? 0,
+          weak: lastKnown?.weak ?? 0,
+          leech: lastKnown?.leech ?? 0,
+          unknown: lastKnown?.unknown ?? 0,
+          total: lastKnown?.total ?? 0,
+        });
+      }
+    }
+
+    return result;
+  })();
+
+  return (
+    <div className="space-y-4">
+      {/* Header: Title + Pie + Timestamps */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <div>
+            <h1 className="text-sm font-medium text-neutral-400 uppercase tracking-wide">leetcode</h1>
+            <div className="text-xs text-neutral-500 mt-1">
+              {lcLastUpdated && <span>lc: {lcLastUpdated}</span>}
+              {lcLastUpdated && lsrLastUpdated && <span className="mx-2">·</span>}
+              {lsrLastUpdated && <span>lsr: {lsrLastUpdated}</span>}
+            </div>
+          </div>
+        </div>
+        <TotalsPieChart
+          easy={current.total_easy}
+          medium={current.total_medium}
+          hard={current.total_hard}
+        />
+      </div>
+
+      {/* Row 1: Problems Solved + Current Mastery + Top Skills */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <CombinedStatsCard
           easy={current.total_easy}
           medium={current.total_medium}
@@ -161,93 +209,79 @@ export default function Dashboard() {
         />
 
         {lsrHistory.length > 0 && (
-          <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
-            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Current Mastery</h3>
-            <MasteryStatsCard snapshot={lsrHistory[lsrHistory.length - 1]} />
-          </div>
-        )}
-      </div>
-
-      {/* Row 2: Progression + Mastery Over Time + Skills Radar */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
-          <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Progression</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorEasy" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorMedium" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#eab308" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#eab308" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorHard" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#525252', fontSize: 11 }} interval="preserveStartEnd" />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#525252', fontSize: 11 }} width={40} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: '6px' }}
-                  labelStyle={{ color: '#d4d4d4' }}
-                  itemStyle={{ color: '#a3a3a3' }}
-                />
-                <Legend wrapperStyle={{ paddingTop: '10px' }} formatter={(value) => <span style={{ color: '#737373' }}>{value}</span>} />
-                <Area type="monotone" dataKey="Easy" stroke="#22c55e" strokeWidth={2} fill="url(#colorEasy)" />
-                <Area type="monotone" dataKey="Medium" stroke="#eab308" strokeWidth={2} fill="url(#colorMedium)" />
-                <Area type="monotone" dataKey="Hard" stroke="#ef4444" strokeWidth={2} fill="url(#colorHard)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {lsrHistory.length > 0 && (
-          <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
-            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Mastery Over Time</h3>
-            <MasteryChart history={lsrHistory} />
+          <div className="bg-neutral-900 border border-neutral-800 p-4 h-full flex flex-col">
+            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">Current Mastery</h3>
+            <div className="flex-1">
+              <MasteryStatsCard snapshot={lsrHistory[lsrHistory.length - 1]} />
+            </div>
           </div>
         )}
 
-        <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
-          <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Skills</h3>
-          <div className="h-64">
-            <SkillRadar skills={skills} />
-          </div>
+        <div className="bg-neutral-900 border border-neutral-800 p-4 h-full flex flex-col">
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">Top Skills</h3>
+          {skillData.length > 0 ? (
+            <div className="flex-1 flex flex-col justify-between">
+              {skillData.map((skill) => (
+                <div key={skill.name} className="py-0.5">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-neutral-300 truncate pr-2">{skill.name}</span>
+                    <span className="text-neutral-400 flex-shrink-0">{skill.value}</span>
+                  </div>
+                  <div className="h-1.5 bg-neutral-800 overflow-hidden">
+                    <div className="h-full bg-neutral-500" style={{ width: `${(skill.value / maxSkillValue) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-neutral-500 text-sm flex-1">no data</p>
+          )}
         </div>
       </div>
 
-      {/* Row 3: Top Skills */}
-      <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
-        <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Top Skills</h3>
-        {skillData.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {skillData.map((skill) => (
-              <div key={skill.name}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-neutral-300 truncate pr-2">{skill.name}</span>
-                  <span className="text-neutral-500 flex-shrink-0">{skill.value}</span>
-                </div>
-                <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-neutral-500 rounded-full" style={{ width: `${(skill.value / maxSkillValue) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-neutral-600 text-sm">No skill data available</p>
-        )}
+      {/* Row 2: Progression Over Time */}
+      <div className="bg-neutral-900 border border-neutral-800 p-4">
+        <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Progression</h3>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorEasy" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorMedium" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#eab308" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#eab308" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorHard" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#737373', fontSize: 10 }} interval="preserveStartEnd" />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#737373', fontSize: 10 }} width={30} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: 0 }}
+                labelStyle={{ color: '#e5e5e5', fontSize: 11 }}
+                itemStyle={{ color: '#a3a3a3', fontSize: 11 }}
+              />
+              <Legend wrapperStyle={{ paddingTop: '5px' }} formatter={(value) => <span style={{ color: '#737373', fontSize: 10 }}>{value}</span>} />
+              <Area type="monotone" dataKey="Easy" stroke="#22c55e" strokeWidth={1.5} fill="url(#colorEasy)" isAnimationActive={false} />
+              <Area type="monotone" dataKey="Medium" stroke="#eab308" strokeWidth={1.5} fill="url(#colorMedium)" isAnimationActive={false} />
+              <Area type="monotone" dataKey="Hard" stroke="#ef4444" strokeWidth={1.5} fill="url(#colorHard)" isAnimationActive={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
-      {/* Footer: Last Updated */}
-      <div className="text-xs text-neutral-600 text-center pt-2">
-        {lcLastUpdated && <span>LC: {lcLastUpdated}</span>}
-        {lcLastUpdated && lsrLastUpdated && <span className="mx-2">·</span>}
-        {lsrLastUpdated && <span>LSR: {lsrLastUpdated}</span>}
-      </div>
+      {/* Row 3: Mastery Over Time */}
+      {lsrHistory.length > 0 && (
+        <div className="bg-neutral-900 border border-neutral-800 p-4">
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Mastery Over Time</h3>
+          <MasteryChart history={backfilledLsrHistory} />
+        </div>
+      )}
     </div>
   );
 }

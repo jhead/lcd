@@ -21,19 +21,20 @@ export default function TotalsPieChart({ easy, medium, hard }: TotalsPieChartPro
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <div className="relative w-48 h-48">
+    <div className="flex items-center gap-6">
+      <div className="relative w-32 h-32 flex-shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={50}
-              outerRadius={80}
+              innerRadius={35}
+              outerRadius={55}
               paddingAngle={2}
               dataKey="value"
               stroke="none"
+              isAnimationActive={false}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
@@ -44,8 +45,8 @@ export default function TotalsPieChart({ easy, medium, hard }: TotalsPieChartPro
                 if (active && payload && payload.length) {
                   const data = payload[0].payload;
                   return (
-                    <div className="bg-neutral-900 border border-neutral-800 px-3 py-2 rounded-lg">
-                      <p className="text-sm" style={{ color: data.color }}>
+                    <div className="bg-neutral-900 border border-neutral-800 px-2 py-1">
+                      <p className="text-xs" style={{ color: data.color }}>
                         {data.name}: {data.value}
                       </p>
                     </div>
@@ -57,18 +58,18 @@ export default function TotalsPieChart({ easy, medium, hard }: TotalsPieChartPro
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-bold text-white">{total}</span>
-          <span className="text-xs text-neutral-500">Total</span>
+          <span className="text-2xl font-bold text-white">{total}</span>
         </div>
       </div>
-      <div className="flex gap-4 mt-4">
+      <div className="flex flex-col gap-1">
         {data.map((item) => (
-          <div key={item.name} className="flex items-center gap-1.5">
+          <div key={item.name} className="flex items-center gap-2">
             <div
-              className="w-2.5 h-2.5 rounded-full"
+              className="w-2 h-2"
               style={{ backgroundColor: item.color }}
             />
             <span className="text-xs text-neutral-500">{item.name}</span>
+            <span className="text-xs text-neutral-400">{item.value}</span>
           </div>
         ))}
       </div>
