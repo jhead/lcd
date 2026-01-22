@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   AreaChart,
   Area,
@@ -27,13 +28,51 @@ interface Beats {
   hard?: number;
 }
 
-interface DashboardProps {
-  history: HistoryEntry[];
-  current: HistoryEntry;
-}
+const API_URL = 'https://lcd.jxh.io';
 
-export default function Dashboard({ history, current }: DashboardProps) {
-  // Format history for the area chart
+export default function Dashboard() {
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await fetch(`${API_URL}/api/history`);
+        if (!response.ok) throw new Error('Failed to fetch');
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setHistory(data);
+        } else {
+          throw new Error('No data available');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-neutral-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error || history.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-neutral-500">{error || 'No data available'}</div>
+      </div>
+    );
+  }
+
+  const current = history[history.length - 1];
+
   const chartData = history.map(entry => ({
     date: new Date(entry.timestamp).toLocaleDateString('en-US', {
       month: 'short',
@@ -44,7 +83,6 @@ export default function Dashboard({ history, current }: DashboardProps) {
     Hard: entry.total_hard,
   }));
 
-  // Parse skill stats from tags_json
   let skills: { advanced?: any[]; intermediate?: any[]; fundamental?: any[] } = {};
   let skillData: Array<{ name: string; value: number }> = [];
   try {
@@ -61,26 +99,19 @@ export default function Dashboard({ history, current }: DashboardProps) {
       }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
-  } catch (e) {
-    // If parsing fails, use empty
-  }
+  } catch (e) {}
 
-  // Parse beats data
   let beats: Beats = {};
   try {
     beats = JSON.parse(current.beats_json || '{}');
-  } catch (e) {
-    // If parsing fails, use empty
-  }
+  } catch (e) {}
 
-  // Find max skill value for bar scaling
   const maxSkillValue = skillData.length > 0 ? Math.max(...skillData.map(s => s.value)) : 1;
 
   return (
     <div className="space-y-5">
       {/* Row 1: Total Stats (Pie) + Combined Stats Card */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Total Stats with Pie Chart */}
         <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
           <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Total Progress</h3>
           <TotalsPieChart
@@ -90,7 +121,6 @@ export default function Dashboard({ history, current }: DashboardProps) {
           />
         </div>
 
-        {/* Combined Stats Card */}
         <CombinedStatsCard
           easy={current.total_easy}
           medium={current.total_medium}
@@ -99,7 +129,7 @@ export default function Dashboard({ history, current }: DashboardProps) {
         />
       </div>
 
-      {/* Row 2: Progression Chart - full width */}
+      {/* Row 2: Progression Chart */}
       <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
         <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Progression Over Time</h3>
         <div className="h-64">
@@ -119,67 +149,30 @@ export default function Dashboard({ history, current }: DashboardProps) {
                   <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <XAxis
-                dataKey="date"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: '#525252', fontSize: 11 }}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: '#525252', fontSize: 11 }}
-                width={40}
-              />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#525252', fontSize: 11 }} interval="preserveStartEnd" />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#525252', fontSize: 11 }} width={40} />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: '#171717',
-                  border: '1px solid #262626',
-                  borderRadius: '6px',
-                }}
+                contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: '6px' }}
                 labelStyle={{ color: '#d4d4d4' }}
                 itemStyle={{ color: '#a3a3a3' }}
               />
-              <Legend
-                wrapperStyle={{ paddingTop: '10px' }}
-                formatter={(value) => <span style={{ color: '#737373' }}>{value}</span>}
-              />
-              <Area
-                type="monotone"
-                dataKey="Easy"
-                stroke="#22c55e"
-                strokeWidth={2}
-                fill="url(#colorEasy)"
-              />
-              <Area
-                type="monotone"
-                dataKey="Medium"
-                stroke="#eab308"
-                strokeWidth={2}
-                fill="url(#colorMedium)"
-              />
-              <Area
-                type="monotone"
-                dataKey="Hard"
-                stroke="#ef4444"
-                strokeWidth={2}
-                fill="url(#colorHard)"
-              />
+              <Legend wrapperStyle={{ paddingTop: '10px' }} formatter={(value) => <span style={{ color: '#737373' }}>{value}</span>} />
+              <Area type="monotone" dataKey="Easy" stroke="#22c55e" strokeWidth={2} fill="url(#colorEasy)" />
+              <Area type="monotone" dataKey="Medium" stroke="#eab308" strokeWidth={2} fill="url(#colorMedium)" />
+              <Area type="monotone" dataKey="Hard" stroke="#ef4444" strokeWidth={2} fill="url(#colorHard)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Row 3: Progress Heatmap - full width */}
+      {/* Row 3: Heatmap */}
       <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
         <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Activity</h3>
         <ProgressHeatmap history={history} />
       </div>
 
-      {/* Row 4: Skill Radar + Top Skills Bar List */}
+      {/* Row 4: Skills */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Skill Radar Chart - spans 2 columns */}
         <div className="lg:col-span-2 rounded-lg bg-neutral-900 border border-neutral-800 p-5">
           <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Skills</h3>
           <div className="h-80">
@@ -187,7 +180,6 @@ export default function Dashboard({ history, current }: DashboardProps) {
           </div>
         </div>
 
-        {/* Top Skills Bar List */}
         <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
           <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Top Skills</h3>
           {skillData.length > 0 ? (
@@ -199,10 +191,7 @@ export default function Dashboard({ history, current }: DashboardProps) {
                     <span className="text-neutral-500 flex-shrink-0">{skill.value}</span>
                   </div>
                   <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-neutral-500 rounded-full"
-                      style={{ width: `${(skill.value / maxSkillValue) * 100}%` }}
-                    />
+                    <div className="h-full bg-neutral-500 rounded-full" style={{ width: `${(skill.value / maxSkillValue) * 100}%` }} />
                   </div>
                 </div>
               ))}
