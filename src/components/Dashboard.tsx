@@ -11,7 +11,6 @@ import {
 import TotalsPieChart from "./TotalsPieChart";
 import CombinedStatsCard from "./CombinedStatsCard";
 import SkillRadar from "./SkillRadar";
-import ProgressHeatmap from "./ProgressHeatmap";
 import MasteryChart, { type LSRSnapshot } from "./MasteryChart";
 import MasteryStatsCard from "./MasteryStatsCard";
 
@@ -200,13 +199,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Row 4: Heatmap */}
-      <div className="rounded-lg bg-neutral-900 border border-neutral-800 p-5">
-        <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Activity</h3>
-        <ProgressHeatmap history={history} />
-      </div>
-
-      {/* Row 5: Skills */}
+      {/* Row 4: Skills */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 rounded-lg bg-neutral-900 border border-neutral-800 p-5">
           <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">Skills</h3>
