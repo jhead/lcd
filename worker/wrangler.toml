@@ -1,0 +1,17 @@
+
+name = "lcd-worker"
+main = "src/index.ts"
+compatibility_date = "2024-11-06"
+
+[env.production]
+routes = [
+  { pattern = "lcd.jxh.io", zone_name = "jxh.io" }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lcd-db"
+database_id = "45336d99-69be-42e7-ab21-e6e583b318c5"
+
+[triggers]
+crons = ["*/5 * * * *"]  # Every 5 minutes

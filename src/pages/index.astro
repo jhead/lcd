@@ -1,0 +1,58 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Dashboard from '../components/Dashboard';
+
+// Fetch data from Worker API, fallback to mock data for development
+const WORKER_API_URL = import.meta.env.PUBLIC_WORKER_API_URL || 'https://your-worker.your-subdomain.workers.dev';
+
+let historyData: Array<{
+  timestamp: number;
+  total_easy: number;
+  total_medium: number;
+  total_hard: number;
+  tags_json: string;
+}> = [];
+
+try {
+  const response = await fetch(`${WORKER_API_URL}/api/history`);
+  if (response.ok) {
+    historyData = await response.json();
+  } else {
+    throw new Error('Failed to fetch history');
+  }
+} catch (error) {
+  // Fallback to mock data if API is not available
+  console.warn('Using mock data:', error);
+  historyData = [
+    {
+      timestamp: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      total_easy: 10,
+      total_medium: 5,
+      total_hard: 1,
+      tags_json: JSON.stringify({})
+    },
+    {
+      timestamp: Date.now(),
+      total_easy: 12,
+      total_medium: 7,
+      total_hard: 2,
+      tags_json: JSON.stringify({})
+    }
+  ];
+}
+
+const currentStats = historyData[historyData.length - 1] || {
+  timestamp: Date.now(),
+  total_easy: 0,
+  total_medium: 0,
+  total_hard: 0,
+  tags_json: JSON.stringify({})
+};
+---
+
+<Layout title="LeetCode Stats">
+  <main class="min-h-screen p-8">
+    <h1 class="text-3xl font-bold mb-8">Engineering Progression</h1>
+    <Dashboard client:load history={historyData} current={currentStats} />
+  </main>
+</Layout>
