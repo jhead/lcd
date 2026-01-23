@@ -91,15 +91,73 @@ export default function Dashboard() {
 
   const current = history[history.length - 1];
 
-  const chartData = history.map(entry => ({
-    date: new Date(entry.timestamp).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    }),
-    Easy: entry.total_easy,
-    Medium: entry.total_medium,
-    Hard: entry.total_hard,
-  }));
+  // Helper to get date string from timestamp
+  const toDateStr = (ts: number) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  // Helper to get start of day timestamp
+  const toDateKey = (ts: number) => {
+    const d = new Date(ts);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  };
+
+  // Bucket LC history by date, taking latest value per day
+  const lcByDate = new Map<number, HistoryEntry>();
+  for (const entry of history) {
+    const dateKey = toDateKey(entry.timestamp);
+    const existing = lcByDate.get(dateKey);
+    if (!existing || entry.timestamp > existing.timestamp) {
+      lcByDate.set(dateKey, entry);
+    }
+  }
+
+  // Bucket LSR history by date, taking latest value per day
+  const lsrByDate = new Map<number, LSRSnapshot>();
+  for (const entry of lsrHistory) {
+    const dateKey = toDateKey(entry.timestamp);
+    const existing = lsrByDate.get(dateKey);
+    if (!existing || entry.timestamp > existing.timestamp) {
+      lsrByDate.set(dateKey, entry);
+    }
+  }
+
+  // Compute unified date range
+  const allTimestamps = [...history.map(e => e.timestamp), ...lsrHistory.map(e => e.timestamp)];
+  const minTs = Math.min(...allTimestamps);
+  const maxTs = Math.max(...allTimestamps);
+  const startDate = toDateKey(minTs);
+  const endDate = toDateKey(maxTs);
+
+  // Generate all dates in range
+  const allDates: number[] = [];
+  for (let d = startDate; d <= endDate; d += 24 * 60 * 60 * 1000) {
+    allDates.push(d);
+  }
+
+  // Build chart data with zeros for missing dates
+  const chartData = allDates.map(dateKey => {
+    const lcEntry = lcByDate.get(dateKey);
+    return {
+      date: toDateStr(dateKey),
+      Easy: lcEntry?.total_easy ?? 0,
+      Medium: lcEntry?.total_medium ?? 0,
+      Hard: lcEntry?.total_hard ?? 0,
+    };
+  });
+
+  // Build normalized LSR history with zeros for missing dates
+  const normalizedLsrHistory: LSRSnapshot[] = allDates.map(dateKey => {
+    const lsrEntry = lsrByDate.get(dateKey);
+    return lsrEntry ?? {
+      id: 0,
+      timestamp: dateKey,
+      strong: 0,
+      learning: 0,
+      weak: 0,
+      leech: 0,
+      unknown: 0,
+      total: 0,
+    };
+  });
 
   let skillData: Array<{ name: string; value: number }> = [];
   try {
@@ -137,46 +195,6 @@ export default function Dashboard() {
 
   const lcLastUpdated = history.length > 0 ? formatTimestamp(history[history.length - 1].timestamp) : null;
   const lsrLastUpdated = lsrHistory.length > 0 ? formatTimestamp(lsrHistory[lsrHistory.length - 1].timestamp) : null;
-
-  // Backfill LSR history to align with LC history dates
-  const backfilledLsrHistory: LSRSnapshot[] = (() => {
-    if (lsrHistory.length === 0) return [];
-
-    // Create a map of date string -> LSR snapshot
-    const lsrByDate = new Map<string, LSRSnapshot>();
-    for (const entry of lsrHistory) {
-      const dateStr = new Date(entry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      lsrByDate.set(dateStr, entry);
-    }
-
-    // Build aligned history based on LC dates
-    const result: LSRSnapshot[] = [];
-    let lastKnown: LSRSnapshot | null = null;
-
-    for (const lcEntry of history) {
-      const dateStr = new Date(lcEntry.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const lsrEntry = lsrByDate.get(dateStr);
-
-      if (lsrEntry) {
-        lastKnown = lsrEntry;
-        result.push(lsrEntry);
-      } else {
-        // Backfill with zeros before first LSR data, or carry forward last known
-        result.push({
-          id: 0,
-          timestamp: lcEntry.timestamp,
-          strong: lastKnown?.strong ?? 0,
-          learning: lastKnown?.learning ?? 0,
-          weak: lastKnown?.weak ?? 0,
-          leech: lastKnown?.leech ?? 0,
-          unknown: lastKnown?.unknown ?? 0,
-          total: lastKnown?.total ?? 0,
-        });
-      }
-    }
-
-    return result;
-  })();
 
   return (
     <div className="space-y-4">
@@ -278,7 +296,7 @@ export default function Dashboard() {
       {lsrHistory.length > 0 && (
         <div className="bg-neutral-900 border border-neutral-800 p-4">
           <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Mastery Over Time</h3>
-          <MasteryChart history={backfilledLsrHistory} />
+          <MasteryChart history={normalizedLsrHistory} />
         </div>
       )}
     </div>

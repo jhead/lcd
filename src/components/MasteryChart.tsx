@@ -68,6 +68,10 @@ export default function MasteryChart({ history }: MasteryChartProps) {
             contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: 0 }}
             labelStyle={{ color: '#e5e5e5', fontSize: 11 }}
             itemStyle={{ color: '#a3a3a3', fontSize: 11 }}
+            itemSorter={(item) => {
+              const order = { Strong: 0, Learning: 1, Weak: 2, Leech: 3 };
+              return order[item.dataKey as keyof typeof order] ?? 4;
+            }}
           />
           <Legend
             wrapperStyle={{ paddingTop: '5px' }}
