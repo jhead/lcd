@@ -133,31 +133,39 @@ export default function Dashboard() {
     allDates.push(d);
   }
 
-  // Build chart data with zeros for missing dates
+  // Build chart data with nulls for missing dates (connectNulls will interpolate)
   const chartData = allDates.map(dateKey => {
     const lcEntry = lcByDate.get(dateKey);
     return {
       date: toDateStr(dateKey),
-      Easy: lcEntry?.total_easy ?? 0,
-      Medium: lcEntry?.total_medium ?? 0,
-      Hard: lcEntry?.total_hard ?? 0,
+      Easy: lcEntry?.total_easy ?? null,
+      Medium: lcEntry?.total_medium ?? null,
+      Hard: lcEntry?.total_hard ?? null,
     };
   });
 
-  // Build normalized LSR history with zeros for missing dates
-  const normalizedLsrHistory: LSRSnapshot[] = allDates.map(dateKey => {
-    const lsrEntry = lsrByDate.get(dateKey);
-    return lsrEntry ?? {
-      id: 0,
-      timestamp: dateKey,
-      strong: 0,
-      learning: 0,
-      weak: 0,
-      leech: 0,
-      unknown: 0,
-      total: 0,
-    };
-  });
+  // Build normalized LSR history, carrying forward last known value for missing dates
+  const normalizedLsrHistory: LSRSnapshot[] = (() => {
+    let lastKnown: LSRSnapshot | null = null;
+    return allDates.map(dateKey => {
+      const lsrEntry = lsrByDate.get(dateKey);
+      if (lsrEntry) {
+        lastKnown = lsrEntry;
+        return lsrEntry;
+      }
+      // Carry forward last known value, or use zeros if no data yet
+      return lastKnown ?? {
+        id: 0,
+        timestamp: dateKey,
+        strong: 0,
+        learning: 0,
+        weak: 0,
+        leech: 0,
+        unknown: 0,
+        total: 0,
+      };
+    });
+  })();
 
   let skillData: Array<{ name: string; value: number }> = [];
   try {
@@ -284,9 +292,9 @@ export default function Dashboard() {
                 itemStyle={{ color: '#a3a3a3', fontSize: 11 }}
               />
               <Legend wrapperStyle={{ paddingTop: '5px' }} formatter={(value) => <span style={{ color: '#737373', fontSize: 10 }}>{value}</span>} />
-              <Area type="monotone" dataKey="Easy" stroke="#22c55e" strokeWidth={1.5} fill="url(#colorEasy)" isAnimationActive={false} />
-              <Area type="monotone" dataKey="Medium" stroke="#eab308" strokeWidth={1.5} fill="url(#colorMedium)" isAnimationActive={false} />
-              <Area type="monotone" dataKey="Hard" stroke="#ef4444" strokeWidth={1.5} fill="url(#colorHard)" isAnimationActive={false} />
+              <Area type="monotone" dataKey="Easy" stroke="#22c55e" strokeWidth={1.5} fill="url(#colorEasy)" isAnimationActive={false} connectNulls />
+              <Area type="monotone" dataKey="Medium" stroke="#eab308" strokeWidth={1.5} fill="url(#colorMedium)" isAnimationActive={false} connectNulls />
+              <Area type="monotone" dataKey="Hard" stroke="#ef4444" strokeWidth={1.5} fill="url(#colorHard)" isAnimationActive={false} connectNulls />
             </AreaChart>
           </ResponsiveContainer>
         </div>
