@@ -1,4 +1,4 @@
-import type { LSRSnapshot } from './MasteryChart';
+import type { LSRSnapshot } from '../shared/types';
 
 interface MasteryStatsCardProps {
   snapshot: LSRSnapshot;

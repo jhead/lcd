@@ -1,42 +1,43 @@
 import { useState, useEffect } from 'react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts';
-import TotalsPieChart from "./TotalsPieChart";
-import CombinedStatsCard from "./CombinedStatsCard";
-import MasteryChart, { type LSRSnapshot } from "./MasteryChart";
-import MasteryStatsCard from "./MasteryStatsCard";
-
-interface HistoryEntry {
-  timestamp: number;
-  total_easy: number;
-  total_medium: number;
-  total_hard: number;
-  tags_json: string;
-  beats_json?: string;
-}
-
-interface Beats {
-  easy?: number;
-  medium?: number;
-  hard?: number;
-}
+import type { HistoryEntry, LSRSnapshot, Beats } from '../shared/types';
+import TotalsPieChart from './TotalsPieChart';
+import CombinedStatsCard from './CombinedStatsCard';
+import MasteryChart from './MasteryChart';
+import MasteryStatsCard from './MasteryStatsCard';
+import ProgressionChart from './ProgressionChart';
 
 const API_URL = 'https://lcd.jxh.io';
 
-export default function Dashboard() {
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lsrHistory, setLsrHistory] = useState<LSRSnapshot[]>([]);
+interface DashboardProps {
+  initialHistory?: HistoryEntry[];
+  initialLsrHistory?: LSRSnapshot[];
+}
 
+export default function Dashboard({ initialHistory, initialLsrHistory }: DashboardProps) {
+  // Check if SSR data was provided (even if empty array)
+  const hasSSRData = initialHistory !== undefined ||
+    (typeof window !== 'undefined' && window.__INITIAL_DATA__ !== undefined);
+
+  const [mounted, setMounted] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>(
+    () => initialHistory ?? (typeof window !== 'undefined' ? window.__INITIAL_DATA__?.history : undefined) ?? []
+  );
+  const [lsrHistory, setLsrHistory] = useState<LSRSnapshot[]>(
+    () => initialLsrHistory ?? (typeof window !== 'undefined' ? window.__INITIAL_DATA__?.lsrHistory : undefined) ?? []
+  );
+  // If SSR data was provided, we're not loading (data came from server)
+  const [loading, setLoading] = useState(!hasSSRData);
+  const [error, setError] = useState<string | null>(null);
+
+  // Mark as mounted for client-only rendering
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Only fetch if SSR data was NOT provided (client-only fallback)
+  useEffect(() => {
+    if (hasSSRData || history.length > 0) return;
+
     async function fetchData() {
       try {
         const response = await fetch(`${API_URL}/api/history`);
@@ -54,10 +55,12 @@ export default function Dashboard() {
       }
     }
     fetchData();
-  }, []);
+  }, [hasSSRData, history.length]);
 
-  // Fetch LSR mastery data (non-blocking, fail silently)
+  // Only fetch LSR if SSR data was NOT provided (client-only fallback)
   useEffect(() => {
+    if (hasSSRData || lsrHistory.length > 0) return;
+
     async function fetchLsrData() {
       try {
         const response = await fetch(`${API_URL}/api/lsr/history`);
@@ -71,7 +74,7 @@ export default function Dashboard() {
       }
     }
     fetchLsrData();
-  }, []);
+  }, [hasSSRData, lsrHistory.length]);
 
   if (loading) {
     return (
@@ -204,6 +207,13 @@ export default function Dashboard() {
   const lcLastUpdated = history.length > 0 ? formatTimestamp(history[history.length - 1].timestamp) : null;
   const lsrLastUpdated = lsrHistory.length > 0 ? formatTimestamp(lsrHistory[lsrHistory.length - 1].timestamp) : null;
 
+  // Chart skeleton for SSR
+  const ChartSkeleton = () => (
+    <div className="h-48 bg-neutral-800/30 animate-pulse flex items-center justify-center">
+      <span className="text-neutral-600 text-xs">loading chart...</span>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Header: Title + Pie + Timestamps */}
@@ -217,11 +227,15 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        <TotalsPieChart
-          easy={current.total_easy}
-          medium={current.total_medium}
-          hard={current.total_hard}
-        />
+        {mounted ? (
+          <TotalsPieChart
+            easy={current.total_easy}
+            medium={current.total_medium}
+            hard={current.total_hard}
+          />
+        ) : (
+          <div className="w-32 h-32 bg-neutral-800/30 animate-pulse" />
+        )}
       </div>
 
       {/* Row 1: Problems Solved + Current Mastery + Top Skills */}
@@ -267,44 +281,22 @@ export default function Dashboard() {
       {/* Row 2: Progression Over Time */}
       <div className="bg-neutral-900 border border-neutral-800 p-4">
         <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Progression</h3>
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorEasy" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorMedium" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#eab308" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#eab308" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorHard" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#737373', fontSize: 10 }} interval="preserveStartEnd" />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#737373', fontSize: 10 }} width={30} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: 0 }}
-                labelStyle={{ color: '#e5e5e5', fontSize: 11 }}
-                itemStyle={{ color: '#a3a3a3', fontSize: 11 }}
-              />
-              <Legend wrapperStyle={{ paddingTop: '5px' }} formatter={(value) => <span style={{ color: '#737373', fontSize: 10 }}>{value}</span>} />
-              <Area type="monotone" dataKey="Easy" stroke="#22c55e" strokeWidth={1.5} fill="url(#colorEasy)" isAnimationActive={false} connectNulls />
-              <Area type="monotone" dataKey="Medium" stroke="#eab308" strokeWidth={1.5} fill="url(#colorMedium)" isAnimationActive={false} connectNulls />
-              <Area type="monotone" dataKey="Hard" stroke="#ef4444" strokeWidth={1.5} fill="url(#colorHard)" isAnimationActive={false} connectNulls />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        {mounted ? (
+          <ProgressionChart data={chartData} />
+        ) : (
+          <ChartSkeleton />
+        )}
       </div>
 
       {/* Row 3: Mastery Over Time */}
       {lsrHistory.length > 0 && (
         <div className="bg-neutral-900 border border-neutral-800 p-4">
           <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Mastery Over Time</h3>
-          <MasteryChart history={normalizedLsrHistory} />
+          {mounted ? (
+            <MasteryChart history={normalizedLsrHistory} />
+          ) : (
+            <ChartSkeleton />
+          )}
         </div>
       )}
     </div>

@@ -7,17 +7,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-
-export interface LSRSnapshot {
-  id: number;
-  timestamp: number;
-  strong: number;
-  learning: number;
-  weak: number;
-  leech: number;
-  unknown: number;
-  total: number;
-}
+import type { LSRSnapshot } from '../shared/types';
 
 interface MasteryChartProps {
   history: LSRSnapshot[];
