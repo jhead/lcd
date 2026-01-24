@@ -5,7 +5,6 @@ export interface HistoryEntry {
   total_medium: number;
   total_hard: number;
   tags_json: string;
-  beats_json?: string;
 }
 
 export interface LSRSnapshot {
@@ -19,11 +18,12 @@ export interface LSRSnapshot {
   total: number;
 }
 
-export interface Beats {
-  easy?: number;
-  medium?: number;
-  hard?: number;
-}
+// Top 150 list totals (as of Jan 2026 - rarely changes)
+export const TOP150_TOTALS = {
+  easy: 29,
+  medium: 91,
+  hard: 30,
+} as const;
 
 export interface Env {
   DB: D1Database;

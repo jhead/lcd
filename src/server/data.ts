@@ -8,10 +8,6 @@ const queryProgress = `
         difficulty
         count
       }
-      userSessionBeatsPercentage {
-        difficulty
-        percentage
-      }
     }
   }
 `;
@@ -82,9 +78,20 @@ async function fetchGQL(
 }
 
 export async function getHistory(db: D1Database): Promise<HistoryEntry[]> {
-  const result = await db.prepare(
-    `SELECT * FROM snapshots ORDER BY timestamp ASC`
-  ).all();
+  // Deduplicate to one row per day (latest snapshot per day)
+  // This reduces payload size while preserving tags_json for skills-over-time charting
+  const result = await db.prepare(`
+    SELECT id, timestamp, total_easy, total_medium, total_hard, tags_json
+    FROM (
+      SELECT *,
+        ROW_NUMBER() OVER (
+          PARTITION BY DATE(timestamp/1000, 'unixepoch')
+          ORDER BY timestamp DESC
+        ) as rn
+      FROM snapshots
+    ) WHERE rn = 1
+    ORDER BY timestamp ASC
+  `).all();
   return (result.results || []) as HistoryEntry[];
 }
 
@@ -97,12 +104,11 @@ export async function getLsrHistory(db: D1Database): Promise<LSRSnapshot[]> {
 
 export async function collectData(env: Env): Promise<void> {
   try {
-    // 1. Fetch Data (Run the 2 queries)
     console.log('Starting data fetch...');
     console.log('User slug:', env.LEETCODE_USER_SLUG);
     console.log('Username:', env.LEETCODE_USERNAME);
 
-    // Fetch progress (includes beats percentage)
+    // Fetch progress
     const progress = await fetchGQL(queryProgress, { userSlug: env.LEETCODE_USER_SLUG }, env, 'progress');
 
     // Fetch skills (optional - may fail if query structure is wrong)
@@ -113,35 +119,27 @@ export async function collectData(env: Env): Promise<void> {
       console.warn('Skills query failed, continuing without skills data:', error.message);
     }
 
-    // 2. Parse & Prepare
+    // Parse progress
     const progressData = progress.data.userProfileUserQuestionProgressV2;
     const numAccepted = progressData.numAcceptedQuestions;
     const easyCount = numAccepted.find((q: any) => q.difficulty === 'EASY')?.count || 0;
     const mediumCount = numAccepted.find((q: any) => q.difficulty === 'MEDIUM')?.count || 0;
     const hardCount = numAccepted.find((q: any) => q.difficulty === 'HARD')?.count || 0;
 
-    // Parse beats percentages from progress query
-    const beatsData = progressData.userSessionBeatsPercentage || [];
-    const beats: Record<string, number> = {};
-    for (const item of beatsData) {
-      beats[item.difficulty.toLowerCase()] = item.percentage;
-    }
-
-    // 3. Save to D1
+    // Save to D1
     await env.DB.prepare(
-      `INSERT INTO snapshots (timestamp, total_easy, total_medium, total_hard, tags_json, beats_json) VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO snapshots (timestamp, total_easy, total_medium, total_hard, tags_json) VALUES (?, ?, ?, ?, ?)`
     )
       .bind(
         Date.now(),
         easyCount,
         mediumCount,
         hardCount,
-        JSON.stringify(skills.data.matchedUser?.tagProblemCounts || {}),
-        JSON.stringify(beats)
+        JSON.stringify(skills.data.matchedUser?.tagProblemCounts || {})
       )
       .run();
 
-    console.log(`Snapshot saved: Easy=${easyCount}, Medium=${mediumCount}, Hard=${hardCount}, Beats=${JSON.stringify(beats)}`);
+    console.log(`Snapshot saved: Easy=${easyCount}, Medium=${mediumCount}, Hard=${hardCount}`);
   } catch (error) {
     console.error('Error in data collection:', error);
     throw error;

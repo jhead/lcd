@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import type { HistoryEntry, LSRSnapshot, Beats } from '../shared/types';
+import type { HistoryEntry, LSRSnapshot } from '../shared/types';
 import TotalsPieChart from './TotalsPieChart';
 import CombinedStatsCard from './CombinedStatsCard';
 import MasteryChart from './MasteryChart';
 import MasteryStatsCard from './MasteryStatsCard';
 import ProgressionChart from './ProgressionChart';
+import SkillsChart from './SkillsChart';
 
 const API_URL = 'https://lcd.jxh.io';
 
@@ -187,11 +188,6 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
       .slice(0, 8);
   } catch (e) {}
 
-  let beats: Beats = {};
-  try {
-    beats = JSON.parse(current.beats_json || '{}');
-  } catch (e) {}
-
   const maxSkillValue = skillData.length > 0 ? Math.max(...skillData.map(s => s.value)) : 1;
 
   // Format timestamp for display
@@ -331,26 +327,47 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
         </div>
       </div>
 
-      {/* Row 1: Problems Solved + Current Mastery + Top Skills */}
+      {/* Row 1: Problems Solved + Progression Over Time */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <CombinedStatsCard
           easy={current.total_easy}
           medium={current.total_medium}
           hard={current.total_hard}
-          beats={beats}
         />
+        <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 p-4">
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Progression</h3>
+          {mounted ? (
+            <ProgressionChart data={chartData} />
+          ) : (
+            <ChartSkeleton />
+          )}
+        </div>
+      </div>
 
-        {lsrHistory.length > 0 && (
+      {/* Row 2: Mastery + Mastery Over Time */}
+      {lsrHistory.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-neutral-900 border border-neutral-800 p-4 h-full flex flex-col">
-            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">Current Mastery</h3>
+            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">Mastery</h3>
             <div className="flex-1">
               <MasteryStatsCard snapshot={lsrHistory[lsrHistory.length - 1]} />
             </div>
           </div>
-        )}
+          <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 p-4">
+            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Mastery Over Time</h3>
+            {mounted ? (
+              <MasteryChart history={normalizedLsrHistory} />
+            ) : (
+              <ChartSkeleton />
+            )}
+          </div>
+        </div>
+      )}
 
+      {/* Row 3: Skills + Skills Over Time */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-neutral-900 border border-neutral-800 p-4 h-full flex flex-col">
-          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">Top Skills</h3>
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">Skills</h3>
           {skillData.length > 0 ? (
             <div className="flex-1 flex flex-col justify-between">
               {skillData.map((skill) => (
@@ -369,29 +386,17 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
             <p className="text-neutral-500 text-sm flex-1">no data</p>
           )}
         </div>
-      </div>
-
-      {/* Row 2: Progression Over Time */}
-      <div className="bg-neutral-900 border border-neutral-800 p-4">
-        <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Progression</h3>
-        {mounted ? (
-          <ProgressionChart data={chartData} />
-        ) : (
-          <ChartSkeleton />
-        )}
-      </div>
-
-      {/* Row 3: Mastery Over Time */}
-      {lsrHistory.length > 0 && (
-        <div className="bg-neutral-900 border border-neutral-800 p-4">
-          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Mastery Over Time</h3>
-          {mounted ? (
-            <MasteryChart history={normalizedLsrHistory} />
-          ) : (
-            <ChartSkeleton />
-          )}
+        <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 p-4 flex flex-col">
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Skills Over Time</h3>
+          <div className="flex-1 min-h-48">
+            {mounted ? (
+              <SkillsChart history={history} />
+            ) : (
+              <ChartSkeleton />
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

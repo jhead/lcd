@@ -4,8 +4,7 @@ CREATE TABLE IF NOT EXISTS snapshots (
   total_easy INTEGER NOT NULL DEFAULT 0,
   total_medium INTEGER NOT NULL DEFAULT 0,
   total_hard INTEGER NOT NULL DEFAULT 0,
-  tags_json TEXT NOT NULL DEFAULT '{}',
-  beats_json TEXT NOT NULL DEFAULT '{}'
+  tags_json TEXT NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS lsr_snapshots (
