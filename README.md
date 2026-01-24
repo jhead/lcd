@@ -4,11 +4,11 @@ A specialized, aesthetic dashboard that visualizes your LeetCode journey with pr
 
 ## Tech Stack
 
-- **Frontend:** Astro (SSG) + React + Tailwind CSS
-- **Visualization:** Tremor (React)
+- **Frontend:** React + Vite + Tailwind CSS
+- **Visualization:** Recharts
 - **Backend/Cron:** Cloudflare Workers (TypeScript)
 - **Database:** Cloudflare D1 (SQLite)
-- **Hosting:** GitHub Pages
+- **Hosting:** Cloudflare Workers
 
 ## Development
 
@@ -31,11 +31,12 @@ pnpm preview
 ```
 /
 ├── src/
+│   ├── client/         # React client application
 │   ├── components/     # React components (Dashboard, SkillRadar, etc.)
-│   ├── layouts/        # Astro layouts
-│   └── pages/          # Astro pages
-├── worker/             # Cloudflare Worker for data collection
-└── .github/workflows/  # GitHub Actions for deployment
+│   ├── server/         # Cloudflare Worker server code
+│   └── shared/         # Shared types and utilities
+├── build.ts            # Build script
+└── wrangler.toml       # Cloudflare Worker configuration
 ```
 
 ## Setup
@@ -44,8 +45,8 @@ See `SETUP.md` for detailed setup instructions.
 
 Quick start:
 1. Install dependencies: `pnpm install`
-2. Set up Cloudflare Worker (see `worker/README.md`)
+2. Set up Cloudflare Worker (see `SETUP.md`)
 3. Configure environment variables
-4. Deploy to GitHub Pages
+4. Deploy to Cloudflare Workers
 
 See `PLAN.md` for the original implementation plan and architecture.

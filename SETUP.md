@@ -19,12 +19,11 @@ pnpm install
 
 1. **Create a D1 database:**
    ```bash
-   cd worker
    wrangler d1 create lcd-db
    ```
    Copy the database ID from the output.
 
-2. **Update `worker/wrangler.toml`:**
+2. **Update `wrangler.toml`:**
    - Replace `your-database-id-here` with your actual database ID
    - Update the route pattern if you have a custom domain
 
@@ -57,18 +56,9 @@ pnpm install
 
 ## Step 3: Configure Frontend
 
-1. **Set the Worker API URL:**
-   
-   For local development, create a `.env` file:
-   ```bash
-   PUBLIC_WORKER_API_URL=https://your-worker-url.workers.dev
-   ```
-   
-   For GitHub Pages, add this as a repository secret or environment variable in your GitHub Actions workflow.
+The frontend is built with Vite and React. The build process bundles both client and server code into a single Cloudflare Worker.
 
-2. **Update `astro.config.mjs`:**
-   - Update the `site` URL to match your GitHub Pages URL
-   - Update the `base` path if your repo is not at the root
+No additional frontend configuration is needed beyond the Worker setup in Step 2.
 
 ## Step 4: Test Locally
 
@@ -83,25 +73,25 @@ pnpm build
 pnpm preview
 ```
 
-## Step 5: Deploy to GitHub Pages
+## Step 5: Deploy to Cloudflare Workers
 
-1. **Push your code to GitHub:**
+1. **Build the project:**
    ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/yourusername/lcd.git
-   git push -u origin main
+   pnpm build
    ```
 
-2. **Enable GitHub Pages:**
-   - Go to your repository Settings → Pages
-   - Source: GitHub Actions
-   - The workflow will automatically deploy on push to `main`
+2. **Deploy the Worker:**
+   ```bash
+   pnpm deploy
+   ```
+   Or use:
+   ```bash
+   wrangler deploy
+   ```
 
-3. **The Worker will trigger rebuilds:**
-   - The cron job runs daily at midnight UTC
-   - Optionally configure `GH_TOKEN` and `GH_REPO` in Worker secrets to trigger automatic rebuilds
+3. **The Worker will automatically collect data:**
+   - The cron job runs every 5 minutes (configured in `wrangler.toml`)
+   - Data is stored in D1 and served via the Worker's SSR route
 
 ## Troubleshooting
 

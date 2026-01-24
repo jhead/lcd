@@ -29,19 +29,19 @@ The system uses a **"Snapshot & Store"** pattern. Since the LeetCode API returns
 
 **Flow:**
 
-1. **Ingest (Cloudflare Worker):** A Cron trigger runs daily. It fetches data from LeetCode GraphQL API.
+1. **Ingest (Cloudflare Worker):** A Cron trigger runs every 5 minutes. It fetches data from LeetCode GraphQL API.
 2. **Storage (Cloudflare D1):** The Worker pushes the JSON payload into a D1 (SQLite) database with a timestamp.
-3. **Build (GitHub Actions):** The Worker triggers a repository dispatch event (or the Cron runs on GH Actions directly) to rebuild the Astro site.
-4. **Render (Astro):** At build time, Astro fetches the full history from D1, pre-renders the HTML/JS.
-5. **Serve (GitHub Pages):** The static site is hosted on GH Pages.
+3. **Build:** The project uses Vite to build the React client and esbuild to bundle the server code.
+4. **Render (SSR):** The Worker serves HTML with embedded data via server-side rendering.
+5. **Serve (Cloudflare Workers):** The Worker serves both the API and the frontend application.
 
 #### **2.2. Tech Stack**
 
-* **Frontend:** Astro (SSG Mode) + React + Tailwind CSS.
-* **Viz Library:** Tremor (React).
-* **Backend/Cron:** Cloudflare Workers (Typescript).
+* **Frontend:** React + Vite + Tailwind CSS.
+* **Viz Library:** Recharts.
+* **Backend/Cron:** Cloudflare Workers (TypeScript).
 * **Database:** Cloudflare D1 (SQLite) - *Chosen for low latency and zero-config integration with Workers.*
-* **Hosting:** GitHub Pages.
+* **Hosting:** Cloudflare Workers (SSR).
 
 ---
 
@@ -108,50 +108,38 @@ export default {
 
 ```
 
-#### **Step 2: The Frontend (Astro + React)**
+#### **Step 2: The Frontend (React + Vite)**
 
 **Project Structure:**
 
 ```text
 /src
+  /client
+    App.tsx          <-- Main React app
+    main.tsx         <-- Client entry point
   /components
-    Dashboard.tsx    <-- React (Tremor)
+    Dashboard.tsx     <-- React (Recharts)
     SkillRadar.tsx   <-- React (Recharts)
-  /layouts
-    Layout.astro
-  /pages
-    index.astro      <-- Server-side data fetching happens here
+  /server
+    index.ts         <-- Worker entry point
+    render.tsx       <-- SSR HTML rendering
+    data.ts          <-- Data fetching from D1
 
 ```
 
-**`src/pages/index.astro` (Data Injection):**
-Astro runs at build time. It will connect to the D1 database (via Cloudflare binding or API) to get the history.
+**`src/server/render.tsx` (SSR):**
+The Worker serves HTML with embedded data via server-side rendering at request time.
 
-```astro
----
-// Server Side Logic
-import Layout from '../layouts/Layout.astro';
-import Dashboard from '../components/Dashboard';
-
-// In Astro, if you deploy to CF Pages, you can bind D1 directly. 
-// For GH Pages, you need to expose your D1 data via a public API endpoint 
-// OR fetch it during the build process if using an adapter.
-
-// Mocking the fetch for the static build
-const historyData = await fetch('https://your-worker.your-subdomain.workers.dev/api/history').then(r => r.json());
-const currentStats = historyData[historyData.length - 1];
----
-
-<Layout title="LeetCode Stats">
-  <main class="bg-slate-900 min-h-screen p-8 text-white">
-    <h1 class="text-3xl font-bold mb-8">Engineering Progression</h1>
-    <Dashboard client:load history={historyData} current={currentStats} />
-  </main>
-</Layout>
-
+```tsx
+// Server-side rendering
+export function renderPage({ history, lsrHistory }) {
+  // Fetch data from D1 and embed in HTML
+  // React app hydrates on the client
+  return html;
+}
 ```
 
-#### **Step 3: Visualizations (React + Tremor)**
+#### **Step 3: Visualizations (React + Recharts)**
 
 **`src/components/Dashboard.tsx`:**
 
@@ -205,33 +193,19 @@ export default function Dashboard({ history, current }) {
 
 #### **Step 4: Deployment Workflow**
 
-To publish to GitHub Pages using Astro, create a `.github/workflows/deploy.yml`:
+Deploy to Cloudflare Workers:
 
-```yaml
-name: Deploy to GitHub Pages
+```bash
+# Build the project
+pnpm build
 
-on:
-  push:
-    branches: [ main ]
-  repository_dispatch:
-    types: [update_stats] # Triggered by your Cloudflare Worker
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install & Build
-        run: |
-          npm install
-          npm run build
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-
+# Deploy the Worker
+pnpm deploy
+# or
+wrangler deploy
 ```
+
+The Worker serves both the API endpoints and the frontend application via SSR.
 
 ### **4. Specific Data Handling (GraphQL)**
 
