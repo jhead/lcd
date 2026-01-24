@@ -201,8 +201,78 @@ export default function Dashboard() {
     });
   };
 
+  // Format prediction date (short format like "Mar 15")
+  const formatPredictionDate = (d: Date) =>
+    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  // Predict milestone date using linear regression on last 14 days
+  function predictMilestoneDate(
+    dataPoints: Array<{ value: number }>,
+    target: number
+  ): Date | null {
+    if (dataPoints.length < 3) return null;
+    const recent = dataPoints.slice(-14);
+    const n = recent.length;
+    const current = recent[n - 1].value;
+
+    // Already reached target
+    if (current >= target) return null;
+
+    // Linear regression: calculate slope
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += i;
+      sumY += recent[i].value;
+      sumXY += i * recent[i].value;
+      sumXX += i * i;
+    }
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+
+    // No progress or negative progress
+    if (slope <= 0) return null;
+
+    const daysToGoal = (target - current) / slope;
+
+    // More than 2 years out
+    if (daysToGoal > 730) return null;
+
+    const predictionDate = new Date();
+    predictionDate.setDate(predictionDate.getDate() + Math.ceil(daysToGoal));
+    return predictionDate;
+  }
+
   const lcLastUpdated = history.length > 0 ? formatTimestamp(history[history.length - 1].timestamp) : null;
   const lsrLastUpdated = lsrHistory.length > 0 ? formatTimestamp(lsrHistory[lsrHistory.length - 1].timestamp) : null;
+
+  // Compute milestone predictions
+  const lc150Prediction = (() => {
+    const points = Array.from(lcByDate.values())
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .map(e => ({ value: e.total_easy + e.total_medium + e.total_hard }));
+    return predictMilestoneDate(points, 150);
+  })();
+
+  const masteryPrediction = (() => {
+    if (lsrHistory.length === 0) return null;
+    const latest = lsrHistory[lsrHistory.length - 1];
+    // Use reviewed total (excludes unknown) as the target
+    const reviewedTotal = latest.strong + latest.learning + latest.weak + latest.leech;
+    if (reviewedTotal === 0) return null;
+    const points = Array.from(lsrByDate.values())
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .map(e => ({ value: e.strong }));
+    return predictMilestoneDate(points, reviewedTotal);
+  })();
+
+  // Compute progress percentages
+  const lcProgress = Math.min(100, ((current.total_easy + current.total_medium + current.total_hard) / 150) * 100);
+  const masteryProgress = (() => {
+    if (lsrHistory.length === 0) return 0;
+    const latest = lsrHistory[lsrHistory.length - 1];
+    const reviewedTotal = latest.strong + latest.learning + latest.weak + latest.leech;
+    if (reviewedTotal === 0) return 0;
+    return Math.min(100, (latest.strong / reviewedTotal) * 100);
+  })();
 
   return (
     <div className="space-y-4">
@@ -214,6 +284,12 @@ export default function Dashboard() {
             <div className="text-xs text-neutral-500 mt-1 space-y-0.5">
               {lcLastUpdated && <div>lc: {lcLastUpdated}</div>}
               {lsrLastUpdated && <div>lsr: {lsrLastUpdated}</div>}
+              {lc150Prediction && (
+                <div className="text-neutral-600">150 by: {formatPredictionDate(lc150Prediction)}</div>
+              )}
+              {masteryPrediction && (
+                <div className="text-neutral-600">mastery by: {formatPredictionDate(masteryPrediction)}</div>
+              )}
             </div>
           </div>
         </div>
@@ -222,6 +298,23 @@ export default function Dashboard() {
           medium={current.total_medium}
           hard={current.total_hard}
         />
+      </div>
+
+      {/* Progress bar */}
+      <div>
+        <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1">Progress</h3>
+        <div className="h-1.5 bg-neutral-800 relative overflow-hidden">
+          {/* Mastery layer (lighter, behind) */}
+          <div
+            className="absolute inset-y-0 left-0 bg-neutral-600"
+            style={{ width: `${masteryProgress}%` }}
+          />
+          {/* LC completion layer (darker, front) */}
+          <div
+            className="absolute inset-y-0 left-0 bg-neutral-400"
+            style={{ width: `${lcProgress}%` }}
+          />
+        </div>
       </div>
 
       {/* Row 1: Problems Solved + Current Mastery + Top Skills */}
