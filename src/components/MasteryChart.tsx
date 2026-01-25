@@ -38,7 +38,7 @@ export default function MasteryChart({ history }: MasteryChartProps) {
   }));
 
   return (
-    <div className="h-48">
+    <div className="h-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
           <XAxis

@@ -18,20 +18,20 @@ export default function MasteryStatsCard({ snapshot }: MasteryStatsCardProps) {
   const total = reviewedTotal || 1; // Avoid division by zero
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
       {/* Progress bars */}
-      <div className="flex-1 flex flex-col justify-between">
+      <div className="flex-1 flex flex-col justify-between min-h-0 overflow-hidden">
         {MASTERY_LEVELS.map(level => {
           const count = snapshot[level.key as keyof LSRSnapshot] as number;
           const percentage = (count / total) * 100;
 
           return (
-            <div key={level.key} className="py-1">
-              <div className="flex justify-between text-sm mb-1.5">
+            <div key={level.key} className="py-0.5 md:py-1">
+              <div className="flex justify-between text-xs md:text-sm mb-0.5 md:mb-1.5">
                 <span className={`${level.textColor}`}>{level.label}</span>
                 <span className="text-neutral-400">{count} ({percentage.toFixed(0)}%)</span>
               </div>
-              <div className="h-1.5 bg-neutral-800 overflow-hidden">
+              <div className="h-1 md:h-1.5 bg-neutral-800 overflow-hidden">
                 <div
                   className={`h-full ${level.color}`}
                   style={{ width: `${percentage}%` }}
@@ -43,8 +43,8 @@ export default function MasteryStatsCard({ snapshot }: MasteryStatsCardProps) {
       </div>
 
       {/* Total */}
-      <div className="pt-3 mt-2 border-t border-neutral-800">
-        <div className="flex justify-between text-sm">
+      <div className="pt-2 md:pt-3 mt-1 md:mt-2 border-t border-neutral-800 flex-shrink-0">
+        <div className="flex justify-between text-xs md:text-sm">
           <span className="text-neutral-400">Reviewed</span>
           <span className="text-neutral-300">{reviewedTotal}</span>
         </div>

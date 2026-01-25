@@ -21,15 +21,15 @@ export default function TotalsPieChart({ easy, medium, hard }: TotalsPieChartPro
   ];
 
   return (
-    <div className="relative w-32 h-32 flex-shrink-0">
+    <div className="relative w-20 h-20 md:w-32 md:h-32 flex-shrink-0">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={35}
-            outerRadius={55}
+            innerRadius="55%"
+            outerRadius="85%"
             paddingAngle={2}
             dataKey="value"
             stroke="none"
@@ -57,7 +57,7 @@ export default function TotalsPieChart({ easy, medium, hard }: TotalsPieChartPro
         </PieChart>
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-white">{total}</span>
+        <span className="text-lg md:text-2xl font-bold text-white">{total}</span>
       </div>
     </div>
   );

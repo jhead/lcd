@@ -245,7 +245,7 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
 
   // Chart skeleton for SSR
   const ChartSkeleton = () => (
-    <div className="h-48 bg-neutral-800/30 animate-pulse flex items-center justify-center">
+    <div className="h-full bg-neutral-800/30 animate-pulse flex items-center justify-center">
       <span className="text-neutral-600 text-xs">loading chart...</span>
     </div>
   );
@@ -281,9 +281,9 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
   })();
 
   return (
-    <div className="space-y-4">
+    <div className="h-full flex flex-col gap-2 md:gap-4">
       {/* Header: Title + Pie + Timestamps */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-6">
           <div>
             <h1 className="text-sm font-medium text-neutral-400 uppercase tracking-wide">leetcode</h1>
@@ -306,13 +306,12 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
             hard={current.total_hard}
           />
         ) : (
-          <div className="w-32 h-32 bg-neutral-800/30 animate-pulse" />
+          <div className="w-20 h-20 md:w-32 md:h-32 bg-neutral-800/30 animate-pulse" />
         )}
       </div>
 
       {/* Progress bar */}
-      <div>
-        <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-1">Progress</h3>
+      <div className="flex-shrink-0">
         <div className="h-1.5 bg-neutral-800 relative overflow-hidden">
           {/* Mastery layer (lighter, behind) */}
           <div
@@ -327,49 +326,110 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
         </div>
       </div>
 
-      {/* Row 1: Problems Solved + Progression Over Time */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* ===== MOBILE LAYOUT ===== */}
+      {/* Row 1: All 3 stats cards */}
+      <div className="grid grid-cols-3 gap-2 flex-1 min-h-0 md:hidden">
         <CombinedStatsCard
           easy={current.total_easy}
           medium={current.total_medium}
           hard={current.total_hard}
         />
-        <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 p-4">
-          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Progression</h3>
-          {mounted ? (
-            <ProgressionChart data={chartData} />
+        {lsrHistory.length > 0 && (
+          <div className="bg-neutral-900 border border-neutral-800 p-2 flex flex-col min-h-0">
+            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2 flex-shrink-0">Mastery</h3>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <MasteryStatsCard snapshot={lsrHistory[lsrHistory.length - 1]} />
+            </div>
+          </div>
+        )}
+        <div className="bg-neutral-900 border border-neutral-800 p-2 flex flex-col min-h-0">
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2 flex-shrink-0">Skills</h3>
+          {skillData.length > 0 ? (
+            <div className="flex-1 flex flex-col justify-between min-h-0 overflow-hidden">
+              {skillData.slice(0, 4).map((skill) => (
+                <div key={skill.name} className="py-0.5">
+                  <div className="flex justify-between text-xs mb-0.5">
+                    <span className="text-neutral-300 truncate pr-1">{skill.name}</span>
+                    <span className="text-neutral-400 flex-shrink-0">{skill.value}</span>
+                  </div>
+                  <div className="h-1 bg-neutral-800 overflow-hidden">
+                    <div className="h-full bg-neutral-500" style={{ width: `${(skill.value / maxSkillValue) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
-            <ChartSkeleton />
+            <p className="text-neutral-500 text-xs flex-1">no data</p>
           )}
+        </div>
+      </div>
+
+      {/* Row 2: Progression chart (mobile) */}
+      <div className="bg-neutral-900 border border-neutral-800 p-2 flex flex-col min-h-0 flex-1 md:hidden">
+        <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-1 flex-shrink-0">Progression</h3>
+        <div className="flex-1 min-h-0">
+          {mounted ? <ProgressionChart data={chartData} /> : <ChartSkeleton />}
+        </div>
+      </div>
+
+      {/* Row 3: Mastery chart (mobile) */}
+      {lsrHistory.length > 0 && (
+        <div className="bg-neutral-900 border border-neutral-800 p-2 flex flex-col min-h-0 flex-1 md:hidden">
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-1 flex-shrink-0">Mastery Over Time</h3>
+          <div className="flex-1 min-h-0">
+            {mounted ? <MasteryChart history={normalizedLsrHistory} /> : <ChartSkeleton />}
+          </div>
+        </div>
+      )}
+
+      {/* Row 4: Skills chart (mobile) */}
+      <div className="bg-neutral-900 border border-neutral-800 p-2 flex flex-col min-h-0 flex-1 md:hidden">
+        <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-1 flex-shrink-0">Skills Over Time</h3>
+        <div className="flex-1 min-h-0">
+          {mounted ? <SkillsChart history={history} /> : <ChartSkeleton />}
+        </div>
+      </div>
+
+      {/* ===== DESKTOP LAYOUT ===== */}
+      {/* Row 1: Problems Solved + Progression Over Time */}
+      <div className="hidden md:grid md:grid-cols-3 gap-4 flex-1 min-h-0">
+        <CombinedStatsCard
+          easy={current.total_easy}
+          medium={current.total_medium}
+          hard={current.total_hard}
+        />
+        <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 p-4 flex flex-col min-h-0">
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3 flex-shrink-0">Progression</h3>
+          <div className="flex-1 min-h-0">
+            {mounted ? <ProgressionChart data={chartData} /> : <ChartSkeleton />}
+          </div>
         </div>
       </div>
 
       {/* Row 2: Mastery + Mastery Over Time */}
       {lsrHistory.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-neutral-900 border border-neutral-800 p-4 h-full flex flex-col">
-            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">Mastery</h3>
-            <div className="flex-1">
+        <div className="hidden md:grid md:grid-cols-3 gap-4 flex-1 min-h-0">
+          <div className="bg-neutral-900 border border-neutral-800 p-4 flex flex-col min-h-0">
+            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4 flex-shrink-0">Mastery</h3>
+            <div className="flex-1 min-h-0 overflow-hidden">
               <MasteryStatsCard snapshot={lsrHistory[lsrHistory.length - 1]} />
             </div>
           </div>
-          <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 p-4">
-            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Mastery Over Time</h3>
-            {mounted ? (
-              <MasteryChart history={normalizedLsrHistory} />
-            ) : (
-              <ChartSkeleton />
-            )}
+          <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 p-4 flex flex-col min-h-0">
+            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3 flex-shrink-0">Mastery Over Time</h3>
+            <div className="flex-1 min-h-0">
+              {mounted ? <MasteryChart history={normalizedLsrHistory} /> : <ChartSkeleton />}
+            </div>
           </div>
         </div>
       )}
 
       {/* Row 3: Skills + Skills Over Time */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-neutral-900 border border-neutral-800 p-4 h-full flex flex-col">
-          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4">Skills</h3>
+      <div className="hidden md:grid md:grid-cols-3 gap-4 flex-1 min-h-0">
+        <div className="bg-neutral-900 border border-neutral-800 p-4 flex flex-col min-h-0">
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4 flex-shrink-0">Skills</h3>
           {skillData.length > 0 ? (
-            <div className="flex-1 flex flex-col justify-between">
+            <div className="flex-1 flex flex-col justify-between min-h-0 overflow-hidden">
               {skillData.map((skill) => (
                 <div key={skill.name} className="py-0.5">
                   <div className="flex justify-between text-sm mb-1">
@@ -386,14 +446,10 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
             <p className="text-neutral-500 text-sm flex-1">no data</p>
           )}
         </div>
-        <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 p-4 flex flex-col">
-          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">Skills Over Time</h3>
-          <div className="flex-1 min-h-48">
-            {mounted ? (
-              <SkillsChart history={history} />
-            ) : (
-              <ChartSkeleton />
-            )}
+        <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 p-4 flex flex-col min-h-0">
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3 flex-shrink-0">Skills Over Time</h3>
+          <div className="flex-1 min-h-0">
+            {mounted ? <SkillsChart history={history} /> : <ChartSkeleton />}
           </div>
         </div>
       </div>
