@@ -17,7 +17,7 @@ export default function CombinedStatsCard({ easy, medium, hard }: CombinedStatsC
 
   return (
     <div className="bg-neutral-900 border border-neutral-800 p-2 md:p-4 h-full flex flex-col min-h-0">
-      <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2 md:mb-4 flex-shrink-0">Problems Solved</h3>
+      <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2 md:mb-4 flex-shrink-0">Solved</h3>
       <div className="flex-1 flex flex-col justify-between min-h-0 overflow-hidden">
         {stats.map(({ key, label, color, barColor }) => {
           const solved = counts[key];
