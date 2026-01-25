@@ -7,7 +7,7 @@ interface AppProps {
 
 export default function App({ initialData }: AppProps) {
   return (
-    <main className="h-dvh p-3 md:p-6 overflow-hidden">
+    <main className="min-h-dvh p-3 md:p-6">
       <div className="max-w-6xl h-full">
         <Dashboard
           initialHistory={initialData?.history}

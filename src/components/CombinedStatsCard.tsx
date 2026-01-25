@@ -25,8 +25,8 @@ export default function CombinedStatsCard({ easy, medium, hard }: CombinedStatsC
           const percentage = Math.min(100, (solved / total) * 100);
 
           return (
-            <div key={key} className="py-0.5 md:py-1">
-              <div className="flex items-center justify-between mb-0.5 md:mb-1.5">
+            <div key={key} className="flex-1 flex flex-col justify-center">
+              <div className="flex items-center justify-between mb-1 md:mb-2">
                 <span className="text-xs md:text-sm text-neutral-400">{label}</span>
                 <div className="flex items-center gap-1 md:gap-2">
                   <span className={`text-base md:text-xl font-bold ${color}`}>{solved}</span>
@@ -35,7 +35,7 @@ export default function CombinedStatsCard({ easy, medium, hard }: CombinedStatsC
                   </span>
                 </div>
               </div>
-              <div className="h-1 md:h-1.5 bg-neutral-800 overflow-hidden">
+              <div className="h-2 md:h-2.5 bg-neutral-800 overflow-hidden">
                 <div
                   className={`h-full ${barColor}`}
                   style={{ width: `${percentage}%` }}
