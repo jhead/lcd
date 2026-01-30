@@ -7,6 +7,7 @@ import MasteryStatsCard from './MasteryStatsCard';
 import ProgressionChart from './ProgressionChart';
 import SkillsChart from './SkillsChart';
 import ProgressRing from './ProgressRing';
+import ActivityLog from './ActivityLog';
 
 const API_URL = 'https://lcd.jxh.io';
 
@@ -283,9 +284,9 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
 
   return (
     <div className="h-full flex flex-col gap-2 md:gap-4">
-      {/* Header: Title + Pie + Timestamps */}
+      {/* Header: Title + Activity Log + Pie + Timestamps */}
       <div className="flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-6">
           <div>
             <h1 className="text-sm font-medium text-neutral-400 uppercase tracking-wide">leetcode</h1>
             <div className="text-xs text-neutral-500 mt-1 space-y-0.5">
@@ -298,6 +299,9 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
                 <div className="text-neutral-600">mastery by: {formatPredictionDate(masteryPrediction)}</div>
               )}
             </div>
+          </div>
+          <div className="hidden md:block border-l border-neutral-800 pl-4">
+            <ActivityLog history={history} />
           </div>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
@@ -315,9 +319,14 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
       </div>
 
 
+      {/* Mobile Activity Log */}
+      <div className="md:hidden border-t border-neutral-800 pt-2">
+        <ActivityLog history={history} compact />
+      </div>
+
       {/* ===== MOBILE LAYOUT ===== */}
       {/* Above the fold: Stats + Charts (fills viewport) */}
-      <div className="flex flex-col gap-2 md:hidden" style={{ height: 'calc(100dvh - 7rem)' }}>
+      <div className="flex flex-col gap-2 md:hidden" style={{ height: 'calc(100dvh - 10rem)' }}>
         {/* Row 1: Problems Solved + Mastery stats (2 cols) */}
         <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
           <CombinedStatsCard
