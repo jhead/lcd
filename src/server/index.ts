@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { Env } from '../shared/types';
-import { getHistory, getLsrHistory, collectData, saveLsrSnapshot } from './data';
+import { getHistory, getLsrHistory, collectData, saveLsrSnapshot, getComments, saveComment } from './data';
 import { renderPage } from './render';
 
 type Bindings = Env;
@@ -102,6 +102,40 @@ app.get('/api/trigger', async (c) => {
       error: error.message,
       stack: error.stack,
     }, 500);
+  }
+});
+
+// API: Comments (GET - read all)
+app.get('/api/comments', async (c) => {
+  try {
+    const comments = await getComments(c.env.DB);
+    return c.json(comments);
+  } catch (error) {
+    return c.json({ error: 'Database error' }, 500);
+  }
+});
+
+// API: Comments (POST - submit new)
+app.post('/api/comments', async (c) => {
+  try {
+    const body = await c.req.json<{ name?: string; message: string }>();
+
+    if (!body.message || typeof body.message !== 'string') {
+      return c.json({ error: 'Message required' }, 400);
+    }
+
+    const message = body.message.trim().slice(0, 500);
+    const name = (body.name?.trim() || 'anon').slice(0, 50);
+
+    if (!message) {
+      return c.json({ error: 'Message required' }, 400);
+    }
+
+    await saveComment(c.env.DB, { name, message });
+    return c.json({ status: 'success' });
+  } catch (error: any) {
+    console.error('Error saving comment:', error);
+    return c.json({ error: 'Failed to save comment' }, 500);
   }
 });
 

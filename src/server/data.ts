@@ -176,3 +176,30 @@ export async function saveLsrSnapshot(
 
   console.log(`LSR snapshot saved: Strong=${snapshot.counts.strong}, Learning=${snapshot.counts.learning}, Weak=${snapshot.counts.weak}, Leech=${snapshot.counts.leech}, Unknown=${snapshot.counts.unknown}, Total=${snapshot.counts.total}`);
 }
+
+export interface Comment {
+  id: number;
+  timestamp: number;
+  name: string;
+  message: string;
+}
+
+export async function getComments(db: D1Database): Promise<Comment[]> {
+  const result = await db.prepare(
+    `SELECT * FROM comments ORDER BY timestamp DESC`
+  ).all();
+  return (result.results || []) as Comment[];
+}
+
+export async function saveComment(
+  db: D1Database,
+  comment: { name: string; message: string }
+): Promise<void> {
+  await db.prepare(
+    `INSERT INTO comments (timestamp, name, message) VALUES (?, ?, ?)`
+  )
+    .bind(Date.now(), comment.name, comment.message)
+    .run();
+
+  console.log(`Comment saved from: ${comment.name}`);
+}

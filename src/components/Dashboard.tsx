@@ -8,6 +8,7 @@ import ProgressionChart from './ProgressionChart';
 import SkillsChart from './SkillsChart';
 import ProgressRing from './ProgressRing';
 import ActivityLog from './ActivityLog';
+import CommentBox from './CommentBox';
 
 const API_URL = 'https://lcd.jxh.io';
 
@@ -459,6 +460,9 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
           </div>
         </div>
       </div>
+
+      {/* Comment Box */}
+      {mounted && <CommentBox />}
     </div>
   );
 }
