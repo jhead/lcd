@@ -9,6 +9,10 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
+  define: {
+    __BUILD_COMMIT__: JSON.stringify(process.env.BUILD_COMMIT || 'dev'),
+    __BUILD_DATE__: JSON.stringify(process.env.BUILD_DATE || new Date().toISOString()),
+  },
   build: {
     outDir: 'dist/client',
     rollupOptions: {

@@ -54,6 +54,8 @@ async function buildServer() {
       'process.env.NODE_ENV': '"production"',
       '__CLIENT_JS__': JSON.stringify(clientJs),
       '__CLIENT_CSS__': JSON.stringify(clientCss),
+      '__BUILD_COMMIT__': JSON.stringify(process.env.BUILD_COMMIT || 'dev'),
+      '__BUILD_DATE__': JSON.stringify(process.env.BUILD_DATE || new Date().toISOString()),
     },
     external: [], // Bundle everything
   });
