@@ -1,52 +1,20 @@
-# LeetCode Dashboard (LCD)
+# lcd
 
-A specialized, aesthetic dashboard that visualizes your LeetCode journey with progression over time, granular skill breakdowns, and a "dark-mode first" developer-centric design.
+my personal leetcode dashboard tracking progress to completing and mastering top 150.
 
-## Tech Stack
+https://lcd.jxh.io
 
-- **Frontend:** React + Vite + Tailwind CSS
-- **Visualization:** Recharts
-- **Backend/Cron:** Cloudflare Workers (TypeScript)
-- **Database:** Cloudflare D1 (SQLite)
-- **Hosting:** Cloudflare Workers
+mastery is measured by spaced repetition progress using my [lsr](https://github.com/jhead/lsr) app.
 
-## Development
+## stack
 
-```bash
-# Install dependencies
-pnpm install
+- react + ssr
+- hono
+- cloudflare workers (w/ D1 SQL)
+- recharts
+- claude
 
-# Start dev server
-pnpm dev
+## how
 
-# Build for production
-pnpm build
-
-# Preview production build
-pnpm preview
-```
-
-## Project Structure
-
-```
-/
-├── src/
-│   ├── client/         # React client application
-│   ├── components/     # React components (Dashboard, SkillRadar, etc.)
-│   ├── server/         # Cloudflare Worker server code
-│   └── shared/         # Shared types and utilities
-├── build.ts            # Build script
-└── wrangler.toml       # Cloudflare Worker configuration
-```
-
-## Setup
-
-See `SETUP.md` for detailed setup instructions.
-
-Quick start:
-1. Install dependencies: `pnpm install`
-2. Set up Cloudflare Worker (see `SETUP.md`)
-3. Configure environment variables
-4. Deploy to Cloudflare Workers
-
-See `PLAN.md` for the original implementation plan and architecture.
+- cron: scrapes my leetcode profile -> D1
+- snapshots from lsr -> worker -> D1
