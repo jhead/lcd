@@ -92,51 +92,48 @@ export default function ActivityLog({ history, compact = false }: ActivityLogPro
     return { easy, medium, hard, total: easy + medium + hard };
   })();
 
-  // Compact: single horizontal line
+  // Compact: two lines - totals on top, E/M/H breakdowns below aligned
   if (compact) {
+    const renderBreakdown = (e: number, m: number, h: number) => (
+      <span className="text-neutral-600">
+        [
+        {e > 0 && <span className="text-green-400">E{e}</span>}
+        {e > 0 && (m > 0 || h > 0) && ' '}
+        {m > 0 && <span className="text-yellow-400">M{m}</span>}
+        {m > 0 && h > 0 && ' '}
+        {h > 0 && <span className="text-red-400">H{h}</span>}
+        ]
+      </span>
+    );
+
     return (
-      <div className="font-mono text-xs flex items-center gap-1 text-neutral-500">
-        <span className="text-neutral-600">&gt;</span>
-        {activities.map((day, i) => (
-          <span key={day.dateKey} className="flex items-center gap-1">
-            {i > 0 && <span className="text-neutral-700 mx-1">·</span>}
-            <span>{day.label}</span>
-            {day.total > 0 ? (
-              <>
-                <span className="text-green-500">+{day.total}</span>
-                <span className="text-neutral-600">
-                  [
-                  {day.easy > 0 && <span className="text-green-400">E{day.easy}</span>}
-                  {day.easy > 0 && (day.medium > 0 || day.hard > 0) && ' '}
-                  {day.medium > 0 && <span className="text-yellow-400">M{day.medium}</span>}
-                  {day.medium > 0 && day.hard > 0 && ' '}
-                  {day.hard > 0 && <span className="text-red-400">H{day.hard}</span>}
-                  ]
-                </span>
-              </>
-            ) : (
-              <span className="text-neutral-700">—</span>
-            )}
-          </span>
-        ))}
-        <span className="text-neutral-700 mx-1">·</span>
-        <span>1w</span>
-        {weekStats.total > 0 ? (
-          <>
-            <span className="text-green-500">+{weekStats.total}</span>
-            <span className="text-neutral-600">
-              [
-              {weekStats.easy > 0 && <span className="text-green-400">E{weekStats.easy}</span>}
-              {weekStats.easy > 0 && (weekStats.medium > 0 || weekStats.hard > 0) && ' '}
-              {weekStats.medium > 0 && <span className="text-yellow-400">M{weekStats.medium}</span>}
-              {weekStats.medium > 0 && weekStats.hard > 0 && ' '}
-              {weekStats.hard > 0 && <span className="text-red-400">H{weekStats.hard}</span>}
-              ]
-            </span>
-          </>
-        ) : (
-          <span className="text-neutral-700">—</span>
-        )}
+      <div className="font-mono text-xs text-neutral-500">
+        {/* Line 1: totals */}
+        <div className="flex items-center">
+          <span className="text-neutral-600 w-4">&gt;</span>
+          {activities.map((day, i) => (
+            <div key={day.dateKey} className="flex items-center w-24">
+              <span>{day.label}</span>
+              <span className="ml-1">{day.total > 0 ? <span className="text-green-500">+{day.total}</span> : <span className="text-neutral-700">—</span>}</span>
+            </div>
+          ))}
+          <div className="flex items-center">
+            <span>1w</span>
+            <span className="ml-1">{weekStats.total > 0 ? <span className="text-green-500">+{weekStats.total}</span> : <span className="text-neutral-700">—</span>}</span>
+          </div>
+        </div>
+        {/* Line 2: E/M/H breakdowns */}
+        <div className="flex items-center">
+          <span className="w-4"></span>
+          {activities.map((day) => (
+            <div key={day.dateKey} className="w-24">
+              {day.total > 0 ? renderBreakdown(day.easy, day.medium, day.hard) : null}
+            </div>
+          ))}
+          <div>
+            {weekStats.total > 0 ? renderBreakdown(weekStats.easy, weekStats.medium, weekStats.hard) : null}
+          </div>
+        </div>
       </div>
     );
   }
