@@ -23,7 +23,7 @@ export default function TotalsPieChart({ easy, medium, hard }: TotalsPieChartPro
   return (
     <div className="relative w-20 h-20 md:w-32 md:h-32 flex-shrink-0">
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
+        <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
           <Pie
             data={data}
             cx="50%"
