@@ -13,12 +13,12 @@ interface MasteryChartProps {
   history: LSRSnapshot[];
 }
 
-// Mastery level colors
+// Mastery level colors - monochrome slate palette
 const COLORS = {
-  strong: '#22c55e',    // green-500
-  learning: '#3b82f6',  // blue-500
-  weak: '#eab308',      // yellow-500
-  leech: '#ef4444',     // red-500
+  strong: '#cbd5e1',    // slate-300 (brightest)
+  learning: '#94a3b8',  // slate-400
+  weak: '#64748b',      // slate-500
+  leech: '#475569',     // slate-600 (darkest)
 };
 
 export default function MasteryChart({ history }: MasteryChartProps) {

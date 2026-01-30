@@ -4,12 +4,12 @@ interface MasteryStatsCardProps {
   snapshot: LSRSnapshot;
 }
 
-// Mastery level colors and labels
+// Mastery level colors and labels - monochrome slate palette
 const MASTERY_LEVELS = [
-  { key: 'strong', label: 'Strong', color: 'bg-green-500', textColor: 'text-green-400' },
-  { key: 'learning', label: 'Learning', color: 'bg-blue-500', textColor: 'text-blue-400' },
-  { key: 'weak', label: 'Weak', color: 'bg-yellow-500', textColor: 'text-yellow-400' },
-  { key: 'leech', label: 'Leech', color: 'bg-red-500', textColor: 'text-red-400' },
+  { key: 'strong', label: 'Strong', color: 'bg-slate-300', textColor: 'text-slate-300' },
+  { key: 'learning', label: 'Learning', color: 'bg-slate-400', textColor: 'text-slate-400' },
+  { key: 'weak', label: 'Weak', color: 'bg-slate-500', textColor: 'text-slate-500' },
+  { key: 'leech', label: 'Leech', color: 'bg-slate-600', textColor: 'text-slate-600' },
 ] as const;
 
 export default function MasteryStatsCard({ snapshot }: MasteryStatsCardProps) {
