@@ -4,6 +4,7 @@ import {
   MAX_SKILLS_DISPLAYED,
   MAX_PREDICTION_DAYS,
   REGRESSION_WINDOW_DAYS,
+  API_URL,
 } from '../shared/constants';
 import TotalsPieChart from './TotalsPieChart';
 import CombinedStatsCard from './CombinedStatsCard';
@@ -14,8 +15,6 @@ import SkillsChart from './SkillsChart';
 import ProgressRing from './ProgressRing';
 import ActivityLog from './ActivityLog';
 import CommentBox from './CommentBox';
-
-const API_URL = 'https://lcd.jxh.io';
 
 interface DashboardProps {
   initialHistory?: HistoryEntry[];
