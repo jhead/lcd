@@ -94,6 +94,10 @@ app.post('/api/lsr/snapshot', async (c) => {
 
 // API: Manual trigger (for testing)
 app.get('/api/trigger', async (c) => {
+  const apiKey = c.req.header('X-API-Key');
+  if (!c.env.TRIGGER_API_KEY || apiKey !== c.env.TRIGGER_API_KEY) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   try {
     await collectData(c.env);
     return c.json({ status: 'success', message: 'Data collection completed' });

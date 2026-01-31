@@ -33,6 +33,7 @@ export interface Env {
   LEETCODE_USERNAME: string;
   LEETCODE_USER_SLUG: string;
   LSR_API_KEY?: string;
+  TRIGGER_API_KEY?: string;
 }
 
 export interface InitialData {
