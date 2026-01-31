@@ -103,8 +103,8 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
 
   const current = history[history.length - 1];
 
-  // Helper to get date string from timestamp
-  const toDateStr = (ts: number) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  // Helper to get date string from UTC date key
+  const toDateStr = (ts: number) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 
   // Bucket LC history by date, taking latest value per day

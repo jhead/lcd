@@ -1,8 +1,8 @@
 /**
- * Convert a timestamp to the start-of-day timestamp in local timezone.
- * Used for bucketing data points by calendar day.
+ * Convert a timestamp to midnight UTC for that calendar day.
+ * Used for bucketing so server (UTC) and clients in any timezone see consistent daily boundaries.
  */
 export const toDateKey = (ts: number): number => {
   const d = new Date(ts);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 };

@@ -30,10 +30,10 @@ export default function ActivityLog({ history, compact = false }: ActivityLogPro
       if (ts === todayKey - oneDayMs) return 'yday';
     }
     const d = new Date(ts);
-    return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+    return `${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(d.getUTCDate()).padStart(2, '0')}`;
   };
 
-  // Bucket by date (local timezone), taking latest value per day
+  // Bucket by date (UTC), taking latest value per day
   const byDate = new Map<number, HistoryEntry>();
   for (const entry of history) {
     const dateKey = toDateKey(entry.timestamp);
