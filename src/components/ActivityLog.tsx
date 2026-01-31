@@ -1,5 +1,6 @@
 import type { HistoryEntry } from '../shared/types';
 import { DIFFICULTY_CLASSES } from '../shared/colors';
+import { toDateKey } from '../shared/utils';
 
 interface ActivityLogProps {
   history: HistoryEntry[];
@@ -18,12 +19,6 @@ interface DailyActivity {
 
 export default function ActivityLog({ history, compact = false }: ActivityLogProps) {
   if (history.length < 2) return null;
-
-  // Helper to get start of day timestamp (local timezone)
-  const toDateKey = (ts: number) => {
-    const d = new Date(ts);
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  };
 
   const todayKey = toDateKey(Date.now());
   const oneDayMs = 24 * 60 * 60 * 1000;
