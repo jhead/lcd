@@ -7,6 +7,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { DIFFICULTY_COLORS } from '../shared/colors';
 
 interface ChartDataPoint {
   date: string;
@@ -18,12 +19,6 @@ interface ChartDataPoint {
 interface ProgressionChartProps {
   data: ChartDataPoint[];
 }
-
-const COLORS = {
-  Easy: '#22c55e',   // green-500
-  Medium: '#eab308', // yellow-500
-  Hard: '#ef4444',   // red-500
-};
 
 export default function ProgressionChart({ data }: ProgressionChartProps) {
   return (
@@ -56,9 +51,9 @@ export default function ProgressionChart({ data }: ProgressionChartProps) {
             wrapperStyle={{ paddingTop: '5px' }}
             formatter={(value) => <span style={{ color: '#737373', fontSize: 10 }}>{value}</span>}
           />
-          <Bar dataKey="Easy" stackId="progress" fill={COLORS.Easy} isAnimationActive={false} />
-          <Bar dataKey="Medium" stackId="progress" fill={COLORS.Medium} isAnimationActive={false} />
-          <Bar dataKey="Hard" stackId="progress" fill={COLORS.Hard} isAnimationActive={false} />
+          <Bar dataKey="Easy" stackId="progress" fill={DIFFICULTY_COLORS.easy} isAnimationActive={false} />
+          <Bar dataKey="Medium" stackId="progress" fill={DIFFICULTY_COLORS.medium} isAnimationActive={false} />
+          <Bar dataKey="Hard" stackId="progress" fill={DIFFICULTY_COLORS.hard} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </div>

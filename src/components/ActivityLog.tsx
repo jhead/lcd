@@ -1,4 +1,5 @@
 import type { HistoryEntry } from '../shared/types';
+import { DIFFICULTY_CLASSES } from '../shared/colors';
 
 interface ActivityLogProps {
   history: HistoryEntry[];
@@ -131,11 +132,11 @@ export default function ActivityLog({ history, compact = false }: ActivityLogPro
     const renderBreakdown = (e: number, m: number, h: number) => (
       <span className="text-neutral-600">
         [
-        {e > 0 && <span className="text-green-400">E{e}</span>}
+        {e > 0 && <span className={DIFFICULTY_CLASSES.easy.text}>E{e}</span>}
         {e > 0 && (m > 0 || h > 0) && ' '}
-        {m > 0 && <span className="text-yellow-400">M{m}</span>}
+        {m > 0 && <span className={DIFFICULTY_CLASSES.medium.text}>M{m}</span>}
         {m > 0 && h > 0 && ' '}
-        {h > 0 && <span className="text-red-400">H{h}</span>}
+        {h > 0 && <span className={DIFFICULTY_CLASSES.hard.text}>H{h}</span>}
         ]
       </span>
     );
@@ -186,11 +187,11 @@ export default function ActivityLog({ history, compact = false }: ActivityLogPro
                 <span className="text-green-500 w-6 text-right">+{day.total}</span>
                 <span className="text-neutral-600">
                   [
-                  {day.easy > 0 && <span className="text-green-400">E{day.easy}</span>}
+                  {day.easy > 0 && <span className={DIFFICULTY_CLASSES.easy.text}>E{day.easy}</span>}
                   {day.easy > 0 && (day.medium > 0 || day.hard > 0) && ' '}
-                  {day.medium > 0 && <span className="text-yellow-400">M{day.medium}</span>}
+                  {day.medium > 0 && <span className={DIFFICULTY_CLASSES.medium.text}>M{day.medium}</span>}
                   {day.medium > 0 && day.hard > 0 && ' '}
-                  {day.hard > 0 && <span className="text-red-400">H{day.hard}</span>}
+                  {day.hard > 0 && <span className={DIFFICULTY_CLASSES.hard.text}>H{day.hard}</span>}
                   ]
                 </span>
               </>
