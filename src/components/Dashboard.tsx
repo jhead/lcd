@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { HistoryEntry, LSRSnapshot } from '../shared/types';
+import { TOP150_TOTALS, type HistoryEntry, type LSRSnapshot } from '../shared/types';
 import TotalsPieChart from './TotalsPieChart';
 import CombinedStatsCard from './CombinedStatsCard';
 import MasteryChart from './MasteryChart';
@@ -274,7 +274,8 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
   })();
 
   // Compute progress percentages
-  const lcProgress = Math.min(100, ((current.total_easy + current.total_medium + current.total_hard) / 150) * 100);
+  const top150Total = TOP150_TOTALS.easy + TOP150_TOTALS.medium + TOP150_TOTALS.hard;
+  const lcProgress = Math.min(100, ((current.total_easy + current.total_medium + current.total_hard) / top150Total) * 100);
   const masteryProgress = (() => {
     if (lsrHistory.length === 0) return 0;
     const latest = lsrHistory[lsrHistory.length - 1];
