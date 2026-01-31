@@ -6,6 +6,7 @@ import {
   REGRESSION_WINDOW_DAYS,
   API_URL,
 } from '../shared/constants';
+import { toDateKey } from '../shared/utils';
 import TotalsPieChart from './TotalsPieChart';
 import CombinedStatsCard from './CombinedStatsCard';
 import MasteryChart from './MasteryChart';
@@ -105,11 +106,6 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
   // Helper to get date string from timestamp
   const toDateStr = (ts: number) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  // Helper to get start of day timestamp
-  const toDateKey = (ts: number) => {
-    const d = new Date(ts);
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  };
 
   // Bucket LC history by date, taking latest value per day
   const lcByDate = new Map<number, HistoryEntry>();
