@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { escapeToBuffer } from 'hono/utils/html';
 import type { Env } from '../shared/types';
 import { getHistory, getLsrHistory, collectData, saveLsrSnapshot, getComments, saveComment } from './data';
 import { renderPage } from './render';
@@ -115,6 +116,13 @@ app.get('/api/comments', async (c) => {
   }
 });
 
+// Escape HTML using Hono's built-in escapeToBuffer (preserves emojis/unicode)
+const escapeHtml = (str: string): string => {
+  const buffer = [''];
+  escapeToBuffer(str, buffer);
+  return buffer[0];
+};
+
 // API: Comments (POST - submit new)
 app.post('/api/comments', async (c) => {
   try {
@@ -124,8 +132,8 @@ app.post('/api/comments', async (c) => {
       return c.json({ error: 'Message required' }, 400);
     }
 
-    const message = body.message.trim().slice(0, 500);
-    const name = (body.name?.trim() || 'anon').slice(0, 50);
+    const message = escapeHtml(body.message.trim().slice(0, 500));
+    const name = escapeHtml((body.name?.trim() || 'anon').slice(0, 50));
 
     if (!message) {
       return c.json({ error: 'Message required' }, 400);
