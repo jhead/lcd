@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
 import { TOP150_TOTALS, type HistoryEntry, type LSRSnapshot } from '../shared/types';
+import {
+  MAX_SKILLS_DISPLAYED,
+  MAX_PREDICTION_DAYS,
+  REGRESSION_WINDOW_DAYS,
+} from '../shared/constants';
 import TotalsPieChart from './TotalsPieChart';
 import CombinedStatsCard from './CombinedStatsCard';
 import MasteryChart from './MasteryChart';
@@ -188,7 +193,7 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
         value: skill.problemsSolved || 0,
       }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
+      .slice(0, MAX_SKILLS_DISPLAYED);
   } catch (e) {}
 
   const maxSkillValue = skillData.length > 0 ? Math.max(...skillData.map(s => s.value)) : 1;
@@ -213,7 +218,7 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
     target: number
   ): Date | null {
     if (dataPoints.length < 3) return null;
-    const recent = dataPoints.slice(-14);
+    const recent = dataPoints.slice(-REGRESSION_WINDOW_DAYS);
     const n = recent.length;
     const current = recent[n - 1].value;
 
@@ -236,7 +241,7 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
     const daysToGoal = (target - current) / slope;
 
     // More than 2 years out
-    if (daysToGoal > 730) return null;
+    if (daysToGoal > MAX_PREDICTION_DAYS) return null;
 
     const predictionDate = new Date();
     predictionDate.setDate(predictionDate.getDate() + Math.ceil(daysToGoal));
@@ -258,7 +263,7 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
     const points = Array.from(lcByDate.values())
       .sort((a, b) => a.timestamp - b.timestamp)
       .map(e => ({ value: e.total_easy + e.total_medium + e.total_hard }));
-    return predictMilestoneDate(points, 150);
+    return predictMilestoneDate(points, TOP150_TOTALS.easy + TOP150_TOTALS.medium + TOP150_TOTALS.hard);
   })();
 
   const masteryPrediction = (() => {

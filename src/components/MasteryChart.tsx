@@ -8,6 +8,7 @@ import {
   Legend,
 } from 'recharts';
 import type { LSRSnapshot } from '../shared/types';
+import { MAX_CHART_DATA_POINTS } from '../shared/constants';
 
 interface MasteryChartProps {
   history: LSRSnapshot[];
@@ -22,8 +23,8 @@ const COLORS = {
 };
 
 export default function MasteryChart({ history }: MasteryChartProps) {
-  // Sample data to ~30 points max to avoid overcrowding
-  const sampleRate = Math.max(1, Math.floor(history.length / 30));
+  // Sample data to max points to avoid overcrowding
+  const sampleRate = Math.max(1, Math.floor(history.length / MAX_CHART_DATA_POINTS));
   const sampledHistory = history.filter((_, index) => index % sampleRate === 0 || index === history.length - 1);
 
   const chartData = sampledHistory.map(entry => ({

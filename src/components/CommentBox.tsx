@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MAX_COMMENT_NAME_LENGTH, MAX_COMMENT_MESSAGE_LENGTH } from '../shared/constants';
 
 const API_URL = 'https://lcd.jxh.io';
 
@@ -44,7 +45,7 @@ export default function CommentBox() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="anon"
-            maxLength={50}
+            maxLength={MAX_COMMENT_NAME_LENGTH}
             className="bg-transparent text-neutral-400 text-xs font-mono placeholder:text-neutral-700 focus:outline-none w-16 md:w-20"
           />
           <span className="text-neutral-700 text-xs font-mono">:</span>
@@ -53,7 +54,7 @@ export default function CommentBox() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="leave a note..."
-            maxLength={500}
+            maxLength={MAX_COMMENT_MESSAGE_LENGTH}
             className="flex-1 bg-transparent text-neutral-300 text-xs font-mono placeholder:text-neutral-700 focus:outline-none"
           />
           <button
