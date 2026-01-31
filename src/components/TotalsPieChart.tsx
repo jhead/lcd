@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { DIFFICULTY_COLORS } from '../shared/colors';
 
 interface TotalsPieChartProps {
   easy: number;
@@ -6,18 +7,12 @@ interface TotalsPieChartProps {
   hard: number;
 }
 
-const COLORS = {
-  easy: '#22c55e',
-  medium: '#eab308',
-  hard: '#ef4444',
-};
-
 export default function TotalsPieChart({ easy, medium, hard }: TotalsPieChartProps) {
   const total = easy + medium + hard;
   const data = [
-    { name: 'Easy', value: easy, color: COLORS.easy },
-    { name: 'Medium', value: medium, color: COLORS.medium },
-    { name: 'Hard', value: hard, color: COLORS.hard },
+    { name: 'Easy', value: easy, color: DIFFICULTY_COLORS.easy },
+    { name: 'Medium', value: medium, color: DIFFICULTY_COLORS.medium },
+    { name: 'Hard', value: hard, color: DIFFICULTY_COLORS.hard },
   ];
 
   return (

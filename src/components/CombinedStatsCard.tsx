@@ -1,4 +1,5 @@
 import { TOP150_TOTALS } from '../shared/types';
+import { DIFFICULTY_CLASSES } from '../shared/colors';
 
 interface CombinedStatsCardProps {
   easy: number;
@@ -7,9 +8,9 @@ interface CombinedStatsCardProps {
 }
 
 const stats = [
-  { key: 'easy', label: 'Easy', color: 'text-green-400', barColor: 'bg-green-500' },
-  { key: 'medium', label: 'Medium', color: 'text-yellow-400', barColor: 'bg-yellow-500' },
-  { key: 'hard', label: 'Hard', color: 'text-red-400', barColor: 'bg-red-500' },
+  { key: 'easy', label: 'Easy', color: DIFFICULTY_CLASSES.easy.text, barColor: DIFFICULTY_CLASSES.easy.bg },
+  { key: 'medium', label: 'Medium', color: DIFFICULTY_CLASSES.medium.text, barColor: DIFFICULTY_CLASSES.medium.bg },
+  { key: 'hard', label: 'Hard', color: DIFFICULTY_CLASSES.hard.text, barColor: DIFFICULTY_CLASSES.hard.bg },
 ] as const;
 
 export default function CombinedStatsCard({ easy, medium, hard }: CombinedStatsCardProps) {
