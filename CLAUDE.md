@@ -72,6 +72,7 @@ wrangler tail                                     # View live Worker logs
 - `LEETCODE_CSRF` - CSRF token from browser cookies
 - `LEETCODE_USERNAME` / `LEETCODE_USER_SLUG` - LeetCode user identifiers
 - `GH_TOKEN` / `GH_REPO` (optional) - For triggering GitHub rebuilds
+- `TRIGGER_API_KEY` (optional) - API key for `/api/trigger` manual data collection
 
 ## Database Schema
 
