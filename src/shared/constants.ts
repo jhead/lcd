@@ -9,3 +9,6 @@ export const REGRESSION_WINDOW_DAYS = 14;
 // Comment form limits
 export const MAX_COMMENT_NAME_LENGTH = 50;
 export const MAX_COMMENT_MESSAGE_LENGTH = 500;
+
+// API URL - derived from window location for portability
+export const API_URL = typeof window !== 'undefined' ? window.location.origin : '';

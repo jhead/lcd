@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { MAX_COMMENT_NAME_LENGTH, MAX_COMMENT_MESSAGE_LENGTH } from '../shared/constants';
-
-const API_URL = 'https://lcd.jxh.io';
+import { MAX_COMMENT_NAME_LENGTH, MAX_COMMENT_MESSAGE_LENGTH, API_URL } from '../shared/constants';
 
 export default function CommentBox() {
   const [name, setName] = useState('');
