@@ -1,5 +1,4 @@
 // Dashboard display limits
-export const MAX_SKILLS_DISPLAYED = 8;
 export const MAX_CHART_DATA_POINTS = 30;
 
 // Prediction settings

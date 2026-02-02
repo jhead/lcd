@@ -1,10 +1,12 @@
+import { useState, useCallback } from 'react';
 import type { HistoryEntry, LSRSnapshot } from '../shared/types';
 import type { DashboardData, ProgressionChartPoint, SkillDataPoint } from '../hooks/useDashboardData';
 import CombinedStatsCard from './CombinedStatsCard';
 import MasteryChart from './MasteryChart';
 import MasteryStatsCard from './MasteryStatsCard';
 import ProgressionChart from './ProgressionChart';
-import SkillsChart from './SkillsChart';
+import SkillsChart, { type SkillsChartActiveData } from './SkillsChart';
+import SkillsTreemap from './SkillsTreemap';
 
 interface ChartSkeletonProps {
   className?: string;
@@ -25,7 +27,6 @@ interface DashboardMobileProps {
   chartData: ProgressionChartPoint[];
   normalizedLsrHistory: LSRSnapshot[];
   skillData: SkillDataPoint[];
-  maxSkillValue: number;
   mounted: boolean;
 }
 
@@ -36,9 +37,16 @@ export default function DashboardMobile({
   chartData,
   normalizedLsrHistory,
   skillData,
-  maxSkillValue,
   mounted,
 }: DashboardMobileProps) {
+  const [skillsActiveData, setSkillsActiveData] = useState<SkillsChartActiveData | null>(null);
+  const [skillsChartKey, setSkillsChartKey] = useState(0);
+
+  const handleClearSelection = useCallback(() => {
+    setSkillsChartKey(k => k + 1);
+    setSkillsActiveData(null);
+  }, []);
+
   return (
     <>
       <div className="flex flex-col gap-2 md:hidden" style={{ height: 'calc(100dvh - 10rem)' }}>
@@ -77,30 +85,42 @@ export default function DashboardMobile({
 
       <div className="flex flex-col gap-2 mt-2 md:hidden">
         <div className="bg-neutral-900 border border-neutral-800 p-2">
-          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">Skills</h3>
-          {skillData.length > 0 ? (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-              {skillData.map((skill) => (
-                <div key={skill.name} className="py-0.5">
-                  <div className="flex justify-between text-xs mb-0.5">
-                    <span className="text-neutral-300 truncate pr-1">{skill.name}</span>
-                    <span className="text-neutral-400 flex-shrink-0">{skill.value}</span>
-                  </div>
-                  <div className="h-1 bg-neutral-800 overflow-hidden">
-                    <div className="h-full bg-neutral-500" style={{ width: `${(skill.value / maxSkillValue) * 100}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-neutral-500 text-xs">no data</p>
-          )}
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Skills</h3>
+            {skillsActiveData && (
+              <div className="flex items-center gap-2">
+                <span className="text-neutral-300 text-xs">{skillsActiveData.date}</span>
+                {skillsActiveData.isSelected && (
+                  <button
+                    onClick={handleClearSelection}
+                    className="text-neutral-500 hover:text-neutral-300 text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="h-32">
+            <SkillsTreemap
+              skillData={skillData}
+              activeData={skillsActiveData}
+            />
+          </div>
         </div>
 
         <div className="bg-neutral-900 border border-neutral-800 p-2">
           <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-1">Skills Over Time</h3>
           <div className="h-48">
-            {mounted ? <SkillsChart history={history} /> : <ChartSkeleton className="h-48" />}
+            {mounted ? (
+              <SkillsChart
+                key={skillsChartKey}
+                history={history}
+                onActiveChange={setSkillsActiveData}
+              />
+            ) : (
+              <ChartSkeleton className="h-48" />
+            )}
           </div>
         </div>
       </div>

@@ -106,7 +106,7 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
     );
   }
 
-  const { current, chartData, normalizedLsrHistory, skillData, maxSkillValue, lc150Prediction, masteryPrediction, lcProgress } =
+  const { current, chartData, normalizedLsrHistory, skillData, lc150Prediction, masteryPrediction, lcProgress } =
     dashboardData;
 
   const lcLastUpdated = history.length > 0 ? formatTimestamp(history[history.length - 1].timestamp) : null;
@@ -158,7 +158,6 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
         chartData={chartData}
         normalizedLsrHistory={normalizedLsrHistory}
         skillData={skillData}
-        maxSkillValue={maxSkillValue}
         mounted={mounted}
       />
 
@@ -169,7 +168,6 @@ export default function Dashboard({ initialHistory, initialLsrHistory }: Dashboa
         chartData={chartData}
         normalizedLsrHistory={normalizedLsrHistory}
         skillData={skillData}
-        maxSkillValue={maxSkillValue}
         mounted={mounted}
       />
 

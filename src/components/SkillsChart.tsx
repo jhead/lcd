@@ -1,37 +1,42 @@
+import { useState, useEffect } from 'react';
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
-  Tooltip,
   ResponsiveContainer,
-  Legend,
+  Tooltip,
 } from 'recharts';
 import type { HistoryEntry } from '../shared/types';
+import type { SkillDataPoint } from '../hooks/useDashboardData';
+
+export interface SkillsChartActiveData {
+  date: string;
+  skills: SkillDataPoint[];
+  isSelected: boolean;
+}
 
 interface SkillsChartProps {
   history: HistoryEntry[];
+  onActiveChange?: (data: SkillsChartActiveData | null) => void;
 }
 
-// Color palette for skills (distinct, readable on dark bg)
-const SKILL_COLORS = [
-  '#3b82f6', // blue
-  '#22c55e', // green
-  '#eab308', // yellow
-  '#ef4444', // red
-  '#a855f7', // purple
-  '#06b6d4', // cyan
-];
+function getSkillColor(index: number, total: number): string {
+  const hue = (index * 360) / total;
+  return `hsla(${hue}, 60%, 50%, 1)`;
+}
 
-interface SkillDataPoint {
+interface ParsedSkillDataPoint {
   tagName: string;
   problemsSolved: number;
 }
 
-export default function SkillsChart({ history }: SkillsChartProps) {
-  // Parse tags from each history entry
+export default function SkillsChart({ history, onActiveChange }: SkillsChartProps) {
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
   const parsedHistory = history.map(entry => {
-    let skills: SkillDataPoint[] = [];
+    let skills: ParsedSkillDataPoint[] = [];
     try {
       const tags = JSON.parse(entry.tags_json || '{}');
       skills = [
@@ -46,30 +51,49 @@ export default function SkillsChart({ history }: SkillsChartProps) {
     return { timestamp: entry.timestamp, skills };
   });
 
-  // Find top 6 skills by latest values
   const latestSkills = parsedHistory[parsedHistory.length - 1]?.skills || [];
-  const topSkillNames = latestSkills
+  const allSkillNames = latestSkills
     .sort((a, b) => b.problemsSolved - a.problemsSolved)
-    .slice(0, 6)
     .map(s => s.tagName);
 
-  // Build chart data
   const chartData = parsedHistory.map(entry => {
     const date = new Date(entry.timestamp).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     });
-    const dataPoint: Record<string, string | number | null> = { date };
+    const dataPoint: Record<string, string | number> = { date };
 
-    for (const skillName of topSkillNames) {
+    for (const skillName of allSkillNames) {
       const skill = entry.skills.find(s => s.tagName === skillName);
-      dataPoint[skillName] = skill?.problemsSolved ?? null;
+      dataPoint[skillName] = skill?.problemsSolved ?? 0;
     }
 
     return dataPoint;
   });
 
-  if (topSkillNames.length === 0) {
+  const displayIndex = hoverIndex ?? selectedIndex ?? null;
+  const isSelected = selectedIndex !== null;
+
+  useEffect(() => {
+    if (displayIndex === null) {
+      onActiveChange?.(null);
+    } else {
+      const activeData = chartData[displayIndex];
+      const skills = allSkillNames
+        .map(name => ({
+          name,
+          value: activeData[name] as number,
+        }))
+        .sort((a, b) => b.value - a.value);
+      onActiveChange?.({
+        date: activeData.date as string,
+        skills,
+        isSelected,
+      });
+    }
+  }, [displayIndex, isSelected]);
+
+  if (allSkillNames.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
         <span className="text-neutral-500 text-sm">no skill data</span>
@@ -80,15 +104,22 @@ export default function SkillsChart({ history }: SkillsChartProps) {
   return (
     <div className="h-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-          <defs>
-            {topSkillNames.map((name, i) => (
-              <linearGradient key={name} id={`colorSkill${i}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={SKILL_COLORS[i]} stopOpacity={0.3}/>
-                <stop offset="95%" stopColor={SKILL_COLORS[i]} stopOpacity={0}/>
-              </linearGradient>
-            ))}
-          </defs>
+        <BarChart
+          data={chartData}
+          margin={{ top: 5, right: 5, left: 0, bottom: 0 }}
+          onMouseMove={(state) => {
+            if (state?.activeTooltipIndex !== undefined) {
+              setHoverIndex(state.activeTooltipIndex);
+            }
+          }}
+          onMouseLeave={() => setHoverIndex(null)}
+          onClick={(state) => {
+            if (state?.activeTooltipIndex !== undefined) {
+              const idx = state.activeTooltipIndex;
+              setSelectedIndex(prev => prev === idx ? null : idx);
+            }
+          }}
+        >
           <XAxis
             dataKey="date"
             axisLine={false}
@@ -102,28 +133,31 @@ export default function SkillsChart({ history }: SkillsChartProps) {
             tick={{ fill: '#737373', fontSize: 10 }}
             width={30}
           />
-          <Tooltip
-            contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: 0 }}
-            labelStyle={{ color: '#e5e5e5', fontSize: 11 }}
-            itemStyle={{ color: '#a3a3a3', fontSize: 11 }}
-          />
-          <Legend
-            wrapperStyle={{ paddingTop: '5px' }}
-            formatter={(value) => <span style={{ color: '#737373', fontSize: 10 }}>{value}</span>}
-          />
-          {topSkillNames.map((name, i) => (
-            <Area
+          <Tooltip content={() => null} cursor={{ fill: 'rgba(255,255,255,0.1)' }} />
+          {allSkillNames.map((name, i) => (
+            <Bar
               key={name}
-              type="monotone"
               dataKey={name}
-              stroke={SKILL_COLORS[i]}
-              strokeWidth={1.5}
-              fill={`url(#colorSkill${i})`}
+              stackId="skills"
+              fill={getSkillColor(i, allSkillNames.length)}
               isAnimationActive={false}
-              connectNulls
+              background={(props: { index: number; x: number; y: number; width: number; height: number }) => {
+                if (selectedIndex === props.index) {
+                  return (
+                    <rect
+                      x={props.x}
+                      y={0}
+                      width={props.width}
+                      height="100%"
+                      fill="rgba(255,255,255,0.1)"
+                    />
+                  );
+                }
+                return null;
+              }}
             />
           ))}
-        </AreaChart>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );

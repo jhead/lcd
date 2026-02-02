@@ -1,10 +1,12 @@
+import { useState, useCallback } from 'react';
 import type { HistoryEntry, LSRSnapshot } from '../shared/types';
 import type { DashboardData, ProgressionChartPoint, SkillDataPoint } from '../hooks/useDashboardData';
 import CombinedStatsCard from './CombinedStatsCard';
 import MasteryChart from './MasteryChart';
 import MasteryStatsCard from './MasteryStatsCard';
 import ProgressionChart from './ProgressionChart';
-import SkillsChart from './SkillsChart';
+import SkillsChart, { type SkillsChartActiveData } from './SkillsChart';
+import SkillsTreemap from './SkillsTreemap';
 
 interface ChartSkeletonProps {
   className?: string;
@@ -25,7 +27,6 @@ interface DashboardDesktopProps {
   chartData: ProgressionChartPoint[];
   normalizedLsrHistory: LSRSnapshot[];
   skillData: SkillDataPoint[];
-  maxSkillValue: number;
   mounted: boolean;
 }
 
@@ -36,9 +37,16 @@ export default function DashboardDesktop({
   chartData,
   normalizedLsrHistory,
   skillData,
-  maxSkillValue,
   mounted,
 }: DashboardDesktopProps) {
+  const [skillsActiveData, setSkillsActiveData] = useState<SkillsChartActiveData | null>(null);
+  const [skillsChartKey, setSkillsChartKey] = useState(0);
+
+  const handleClearSelection = useCallback(() => {
+    setSkillsChartKey(k => k + 1);
+    setSkillsActiveData(null);
+  }, []);
+
   return (
     <>
       <div className="hidden md:grid md:grid-cols-3 gap-4 flex-1 min-h-0">
@@ -74,29 +82,41 @@ export default function DashboardDesktop({
 
       <div className="hidden md:grid md:grid-cols-3 gap-4 flex-1 min-h-0">
         <div className="bg-neutral-900 border border-neutral-800 p-4 flex flex-col min-h-0">
-          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-4 flex-shrink-0">Skills</h3>
-          {skillData.length > 0 ? (
-            <div className="flex-1 flex flex-col justify-between min-h-0 overflow-hidden">
-              {skillData.map((skill) => (
-                <div key={skill.name} className="py-0.5">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-neutral-300 truncate pr-2">{skill.name}</span>
-                    <span className="text-neutral-400 flex-shrink-0">{skill.value}</span>
-                  </div>
-                  <div className="h-1.5 bg-neutral-800 overflow-hidden">
-                    <div className="h-full bg-neutral-500" style={{ width: `${(skill.value / maxSkillValue) * 100}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-neutral-500 text-sm flex-1">no data</p>
-          )}
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Skills</h3>
+            {skillsActiveData && (
+              <div className="flex items-center gap-2">
+                <span className="text-neutral-300 text-xs">{skillsActiveData.date}</span>
+                {skillsActiveData.isSelected && (
+                  <button
+                    onClick={handleClearSelection}
+                    className="text-neutral-500 hover:text-neutral-300 text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-h-0">
+            <SkillsTreemap
+              skillData={skillData}
+              activeData={skillsActiveData}
+            />
+          </div>
         </div>
         <div className="md:col-span-2 bg-neutral-900 border border-neutral-800 p-4 flex flex-col min-h-0">
           <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3 flex-shrink-0">Skills Over Time</h3>
           <div className="flex-1 min-h-0">
-            {mounted ? <SkillsChart history={history} /> : <ChartSkeleton />}
+            {mounted ? (
+              <SkillsChart
+                key={skillsChartKey}
+                history={history}
+                onActiveChange={setSkillsActiveData}
+              />
+            ) : (
+              <ChartSkeleton />
+            )}
           </div>
         </div>
       </div>

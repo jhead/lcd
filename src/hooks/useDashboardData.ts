@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { TOP150_TOTALS, type HistoryEntry, type LSRSnapshot } from '../shared/types';
-import { MAX_SKILLS_DISPLAYED } from '../shared/constants';
 import { toDateKey, toDateStr, predictMilestoneDate } from '../shared/utils';
 
 export interface ProgressionChartPoint {
@@ -20,7 +19,6 @@ export interface DashboardData {
   chartData: ProgressionChartPoint[];
   normalizedLsrHistory: LSRSnapshot[];
   skillData: SkillDataPoint[];
-  maxSkillValue: number;
   lc150Prediction: Date | null;
   masteryPrediction: Date | null;
   lcProgress: number;
@@ -107,13 +105,10 @@ export function useDashboardData(
           name: skill.tagName || 'Unknown',
           value: skill.problemsSolved || 0,
         }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, MAX_SKILLS_DISPLAYED);
+        .sort((a, b) => b.value - a.value);
     } catch {
       // Ignore parse errors
     }
-
-    const maxSkillValue = skillData.length > 0 ? Math.max(...skillData.map(s => s.value)) : 1;
 
     const top150Total = TOP150_TOTALS.easy + TOP150_TOTALS.medium + TOP150_TOTALS.hard;
     const lc150Prediction = (() => {
@@ -152,7 +147,6 @@ export function useDashboardData(
       chartData,
       normalizedLsrHistory,
       skillData,
-      maxSkillValue,
       lc150Prediction,
       masteryPrediction,
       lcProgress,
