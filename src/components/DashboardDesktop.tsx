@@ -6,7 +6,7 @@ import MasteryChart from './MasteryChart';
 import MasteryStatsCard from './MasteryStatsCard';
 import ProgressionChart from './ProgressionChart';
 import SkillsChart, { type SkillsChartActiveData } from './SkillsChart';
-import SkillsTreemap from './SkillsTreemap';
+import SkillsList from './SkillsList';
 
 interface ChartSkeletonProps {
   className?: string;
@@ -99,7 +99,7 @@ export default function DashboardDesktop({
             )}
           </div>
           <div className="flex-1 min-h-0">
-            <SkillsTreemap
+            <SkillsList
               skillData={skillData}
               activeData={skillsActiveData}
             />

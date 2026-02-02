@@ -6,7 +6,7 @@ import MasteryChart from './MasteryChart';
 import MasteryStatsCard from './MasteryStatsCard';
 import ProgressionChart from './ProgressionChart';
 import SkillsChart, { type SkillsChartActiveData } from './SkillsChart';
-import SkillsTreemap from './SkillsTreemap';
+import SkillsList from './SkillsList';
 
 interface ChartSkeletonProps {
   className?: string;
@@ -85,6 +85,21 @@ export default function DashboardMobile({
 
       <div className="flex flex-col gap-2 mt-2 md:hidden">
         <div className="bg-neutral-900 border border-neutral-800 p-2">
+          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-1">Skills Over Time</h3>
+          <div className="h-48">
+            {mounted ? (
+              <SkillsChart
+                key={skillsChartKey}
+                history={history}
+                onActiveChange={setSkillsActiveData}
+              />
+            ) : (
+              <ChartSkeleton className="h-48" />
+            )}
+          </div>
+        </div>
+
+        <div className="bg-neutral-900 border border-neutral-800 p-2">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Skills</h3>
             {skillsActiveData && (
@@ -102,25 +117,10 @@ export default function DashboardMobile({
             )}
           </div>
           <div className="h-32">
-            <SkillsTreemap
+            <SkillsList
               skillData={skillData}
               activeData={skillsActiveData}
             />
-          </div>
-        </div>
-
-        <div className="bg-neutral-900 border border-neutral-800 p-2">
-          <h3 className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-1">Skills Over Time</h3>
-          <div className="h-48">
-            {mounted ? (
-              <SkillsChart
-                key={skillsChartKey}
-                history={history}
-                onActiveChange={setSkillsActiveData}
-              />
-            ) : (
-              <ChartSkeleton className="h-48" />
-            )}
           </div>
         </div>
       </div>

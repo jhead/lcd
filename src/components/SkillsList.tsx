@@ -1,12 +1,12 @@
 import type { SkillDataPoint } from '../hooks/useDashboardData';
 import type { SkillsChartActiveData } from './SkillsChart';
 
-interface SkillsTreemapProps {
+interface SkillsListProps {
   skillData: SkillDataPoint[];
   activeData?: SkillsChartActiveData | null;
 }
 
-export default function SkillsTreemap({ skillData, activeData }: SkillsTreemapProps) {
+export default function SkillsList({ skillData, activeData }: SkillsListProps) {
   const displayData = activeData?.skills ?? skillData;
 
   if (displayData.length === 0) {
@@ -18,13 +18,13 @@ export default function SkillsTreemap({ skillData, activeData }: SkillsTreemapPr
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs overflow-y-auto">
+    <div className="h-full overflow-y-auto">
+      <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-xs">
         {displayData.map((skill) => (
-          <span key={skill.name} className="text-neutral-400">
-            <span className="text-neutral-300">{skill.name}</span>
-            <span className="text-neutral-500 ml-1">{skill.value}</span>
-          </span>
+          <div key={skill.name} className="flex justify-between gap-1 min-w-0">
+            <span className="text-neutral-300 truncate">{skill.name}</span>
+            <span className="text-neutral-500 flex-shrink-0">{skill.value}</span>
+          </div>
         ))}
       </div>
     </div>
