@@ -92,6 +92,15 @@ export function useDashboardData(
       };
     });
 
+    // Backfill early dates (before first LSR snapshot) with the first known value
+    const firstKnown = normalizedLsrHistory.find(e => e.total > 0);
+    if (firstKnown) {
+      for (let i = 0; i < normalizedLsrHistory.length; i++) {
+        if (normalizedLsrHistory[i].total > 0) break;
+        normalizedLsrHistory[i] = { ...firstKnown, id: 0, timestamp: allDates[i] };
+      }
+    }
+
     let skillData: SkillDataPoint[] = [];
     try {
       const skills = JSON.parse(current.tags_json || '{}');

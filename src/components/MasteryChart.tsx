@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import type { LSRSnapshot } from '../shared/types';
 import { MAX_CHART_DATA_POINTS } from '../shared/constants';
+import { toDateStr } from '../shared/utils';
 
 interface MasteryChartProps {
   history: LSRSnapshot[];
@@ -28,10 +29,7 @@ export default function MasteryChart({ history }: MasteryChartProps) {
   const sampledHistory = history.filter((_, index) => index % sampleRate === 0 || index === history.length - 1);
 
   const chartData = sampledHistory.map(entry => ({
-    date: new Date(entry.timestamp).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    }),
+    date: toDateStr(entry.timestamp),
     Strong: entry.strong,
     Learning: entry.learning,
     Weak: entry.weak,

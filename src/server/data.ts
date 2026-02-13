@@ -78,14 +78,14 @@ async function fetchGQL(
 }
 
 export async function getHistory(db: D1Database): Promise<HistoryEntry[]> {
-  // Deduplicate to one row per day (latest snapshot per day)
-  // This reduces payload size while preserving tags_json for skills-over-time charting
+  // Deduplicate to one row per day (latest snapshot per day).
+  // Uses Pacific time (UTC-8) for day boundaries so dedup aligns with local usage.
   const result = await db.prepare(`
     SELECT id, timestamp, total_easy, total_medium, total_hard, tags_json
     FROM (
       SELECT *,
         ROW_NUMBER() OVER (
-          PARTITION BY DATE(timestamp/1000, 'unixepoch')
+          PARTITION BY DATE(timestamp/1000, 'unixepoch', '-8 hours')
           ORDER BY timestamp DESC
         ) as rn
       FROM snapshots

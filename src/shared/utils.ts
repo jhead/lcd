@@ -1,17 +1,26 @@
 import { REGRESSION_WINDOW_DAYS, MAX_PREDICTION_DAYS } from './constants';
 
 /**
- * Convert a timestamp to midnight UTC for that calendar day.
- * Used for bucketing so server (UTC) and clients in any timezone see consistent daily boundaries.
+ * Convert a timestamp to midnight local time for that calendar day.
+ * Used for bucketing so daily boundaries align with the user's timezone.
  */
 export function toDateKey(ts: number): number {
   const d = new Date(ts);
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
-/** Get date string from timestamp (e.g. "Jan 15") - uses UTC for consistency with toDateKey */
+/** Get date string from timestamp (e.g. "Jan 15") in local timezone */
 export function toDateStr(ts: number): string {
-  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/** Get ISO date string from timestamp (e.g. "2025-01-15") in local timezone */
+export function toDateISOStr(ts: number): string {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /** Format timestamp for display (e.g. "Jan 15, 3:45 PM") */

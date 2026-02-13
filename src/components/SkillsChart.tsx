@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import type { HistoryEntry } from '../shared/types';
 import type { SkillDataPoint } from '../hooks/useDashboardData';
+import { toDateStr } from '../shared/utils';
 
 export interface SkillsChartActiveData {
   date: string;
@@ -57,10 +58,7 @@ export default function SkillsChart({ history, onActiveChange }: SkillsChartProp
     .map(s => s.tagName);
 
   const chartData = parsedHistory.map(entry => {
-    const date = new Date(entry.timestamp).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
+    const date = toDateStr(entry.timestamp);
     const dataPoint: Record<string, string | number> = { date };
 
     for (const skillName of allSkillNames) {

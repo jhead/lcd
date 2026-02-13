@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { toDateISOStr } from '../shared/utils';
 
 interface HistoryEntry {
   timestamp: number;
@@ -32,7 +33,7 @@ export default function ProgressHeatmap({ history }: ProgressHeatmapProps) {
       const delta = currTotal - prevTotal;
 
       if (delta > 0) {
-        const dateKey = new Date(curr.timestamp).toISOString().split('T')[0];
+        const dateKey = toDateISOStr(curr.timestamp);
         dailyMap.set(dateKey, (dailyMap.get(dateKey) || 0) + delta);
       }
     }
@@ -52,7 +53,7 @@ export default function ProgressHeatmap({ history }: ProgressHeatmapProps) {
     for (let i = 0; i < 364 + today.getDay(); i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
-      const dateKey = date.toISOString().split('T')[0];
+      const dateKey = toDateISOStr(date.getTime());
       const count = dailyProgress.get(dateKey) || 0;
       currentWeek.push({ date: dateKey, count });
 
