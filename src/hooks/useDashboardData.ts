@@ -59,8 +59,13 @@ export function useDashboardData(
     const endDate = toDateKey(maxTs);
 
     const allDates: number[] = [];
-    for (let d = startDate; d <= endDate; d += 24 * 60 * 60 * 1000) {
-      allDates.push(d);
+    {
+      const cursor = new Date(startDate);
+      const endD = new Date(endDate);
+      while (cursor <= endD) {
+        allDates.push(cursor.getTime());
+        cursor.setDate(cursor.getDate() + 1);
+      }
     }
 
     const chartData: ProgressionChartPoint[] = allDates.map(dateKey => {
