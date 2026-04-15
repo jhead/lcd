@@ -78,22 +78,53 @@ async function fetchGQL(
 }
 
 export async function getHistory(db: D1Database): Promise<HistoryEntry[]> {
-  // Deduplicate to one row per day (latest snapshot per UTC day).
-  // Use UTC for server-side dedup; the client re-buckets by local timezone.
-  // Previously hardcoded to PST (-8h) which broke during DST (PDT = -7h).
-  const result = await db.prepare(`
-    SELECT id, timestamp, total_easy, total_medium, total_hard, tags_json
-    FROM (
-      SELECT *,
-        ROW_NUMBER() OVER (
-          PARTITION BY DATE(timestamp/1000, 'unixepoch')
-          ORDER BY timestamp DESC
-        ) as rn
+  // For recent days: return all raw snapshots (no dedup) so the client can
+  // bucket accurately by local timezone. Any fixed UTC offset used for
+  // server-side dedup would misalign with the client's local day boundary.
+  // For older history: one snapshot per UTC day is fine for chart display.
+  // tags_json is stripped from recent rows (large per row) and injected back
+  // only on the last entry, which is what useDashboardData uses for skills.
+  const cutoffMs = Date.now() - 14 * 24 * 60 * 60 * 1000;
+
+  const [olderResult, recentResult, latestRow] = await Promise.all([
+    db.prepare(`
+      SELECT id, timestamp, total_easy, total_medium, total_hard, tags_json
+      FROM (
+        SELECT *,
+          ROW_NUMBER() OVER (
+            PARTITION BY DATE(timestamp/1000, 'unixepoch')
+            ORDER BY timestamp DESC
+          ) as rn
+        FROM snapshots
+        WHERE timestamp <= ?
+      ) WHERE rn = 1
+      ORDER BY timestamp ASC
+    `).bind(cutoffMs).all(),
+
+    db.prepare(`
+      SELECT id, timestamp, total_easy, total_medium, total_hard, '{}' as tags_json
       FROM snapshots
-    ) WHERE rn = 1
-    ORDER BY timestamp ASC
-  `).all();
-  return (result.results || []) as HistoryEntry[];
+      WHERE timestamp > ?
+      ORDER BY timestamp ASC
+    `).bind(cutoffMs).all(),
+
+    db.prepare(`SELECT tags_json FROM snapshots ORDER BY timestamp DESC LIMIT 1`).first(),
+  ]);
+
+  const results = [
+    ...(olderResult.results || []),
+    ...(recentResult.results || []),
+  ] as HistoryEntry[];
+
+  // Restore real tags_json on the last entry for skills display
+  if (results.length > 0 && latestRow) {
+    results[results.length - 1] = {
+      ...results[results.length - 1],
+      tags_json: (latestRow as any).tags_json,
+    };
+  }
+
+  return results;
 }
 
 export async function getLsrHistory(db: D1Database): Promise<LSRSnapshot[]> {
