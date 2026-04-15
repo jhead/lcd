@@ -78,14 +78,15 @@ async function fetchGQL(
 }
 
 export async function getHistory(db: D1Database): Promise<HistoryEntry[]> {
-  // Deduplicate to one row per day (latest snapshot per day).
-  // Uses Pacific time (UTC-8) for day boundaries so dedup aligns with local usage.
+  // Deduplicate to one row per day (latest snapshot per UTC day).
+  // Use UTC for server-side dedup; the client re-buckets by local timezone.
+  // Previously hardcoded to PST (-8h) which broke during DST (PDT = -7h).
   const result = await db.prepare(`
     SELECT id, timestamp, total_easy, total_medium, total_hard, tags_json
     FROM (
       SELECT *,
         ROW_NUMBER() OVER (
-          PARTITION BY DATE(timestamp/1000, 'unixepoch', '-8 hours')
+          PARTITION BY DATE(timestamp/1000, 'unixepoch')
           ORDER BY timestamp DESC
         ) as rn
       FROM snapshots

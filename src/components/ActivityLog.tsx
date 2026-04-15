@@ -21,13 +21,13 @@ export default function ActivityLog({ history, compact = false }: ActivityLogPro
   if (history.length < 2) return null;
 
   const todayKey = toDateKey(Date.now());
-  const oneDayMs = 24 * 60 * 60 * 1000;
+  const ydayKey = (() => { const d = new Date(todayKey); d.setDate(d.getDate() - 1); return d.getTime(); })();
 
   // Format date as MM/DD or relative label
   const formatDate = (ts: number, useLabel: boolean) => {
     if (useLabel) {
       if (ts === todayKey) return 'today';
-      if (ts === todayKey - oneDayMs) return 'yday';
+      if (ts === ydayKey) return 'yday';
     }
     const d = new Date(ts);
     return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
@@ -47,8 +47,12 @@ export default function ActivityLog({ history, compact = false }: ActivityLogPro
   // Always include today and fill forward with latest known data
   const maxDays = compact ? 2 : 5;
   const dateKeys: number[] = [];
-  for (let i = 0; i < maxDays + 1; i++) {
-    dateKeys.push(todayKey - i * oneDayMs);
+  {
+    const cursor = new Date(todayKey);
+    for (let i = 0; i < maxDays + 1; i++) {
+      dateKeys.push(cursor.getTime());
+      cursor.setDate(cursor.getDate() - 1); // use setDate to handle DST correctly
+    }
   }
 
   // For each date, get the snapshot value (or carry forward from previous day)
@@ -106,9 +110,11 @@ export default function ActivityLog({ history, compact = false }: ActivityLogPro
   // Compute 1-week totals (last 7 days, aligned to whole days)
   const weekStats = (() => {
     let easy = 0, medium = 0, hard = 0;
+    const weekCursor = new Date(todayKey);
     for (let i = 0; i < 7; i++) {
-      const currentDate = todayKey - i * oneDayMs;
-      const prevDate = todayKey - (i + 1) * oneDayMs;
+      const currentDate = weekCursor.getTime();
+      weekCursor.setDate(weekCursor.getDate() - 1);
+      const prevDate = weekCursor.getTime();
       const current = getValueForDate(currentDate);
       const prev = getValueForDate(prevDate);
       if (!current || !prev) continue;
